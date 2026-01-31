@@ -1,0 +1,29 @@
+
+# User specific
+log1.txt
+prompt.txt
+.claude/
+
+# Build directories
+build/
+*.build
+*-build-*
+
+# Qt Creator
+CMakeLists.txt.user
+*.pro.user
+*.pro.user.*
+
+# Object files and binaries
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.exe
+*.a
+*.lib
+
+# OS specific
+.DS_Store
+Thumbs.db
