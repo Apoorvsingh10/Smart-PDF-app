@@ -1,0 +1,92 @@
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.10.1'
+        classpath 'com.google.gms:google-services:4.4.0'
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+apply plugin: qtGradlePluginType
+apply plugin: 'com.google.gms.google-services'
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+    implementation 'androidx.core:core:1.16.0'
+
+    // Firebase BoM (Bill of Materials) for version management
+    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+
+    // Firebase Authentication
+    implementation 'com.google.firebase:firebase-auth'
+
+    // Google Sign-In
+    implementation 'com.google.android.gms:play-services-auth:20.7.0'
+
+    // Facebook Login
+    implementation 'com.facebook.android:facebook-login:16.3.0'
+}
+
+// Fix Kotlin stdlib duplicate class conflicts
+configurations.all {
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+}
+
+android {
+    namespace 'com.pdfpilot.app'
+    compileSdkVersion androidCompileSdkVersion
+    buildToolsVersion androidBuildToolsVersion
+    ndkVersion = androidNdkVersion
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = [qtAndroidDir + '/src', 'src', 'java']
+            aidl.srcDirs = [qtAndroidDir + '/src', 'src', 'aidl']
+            res.srcDirs = [qtAndroidDir + '/res', 'res']
+            resources.srcDirs = ['resources']
+            renderscript.srcDirs = ['src']
+            assets.srcDirs = ['assets']
+            jniLibs.srcDirs = ['libs']
+       }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.incremental = true
+        options.compilerArgs += ['-Xlint:all']
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lintOptions {
+        abortOnError = false
+    }
+
+    aaptOptions {
+        noCompress 'rcc'
+    }
+
+    defaultConfig {
+        applicationId "com.pdfpilot.app"
+        resConfig "en"
+        minSdkVersion qtMinSdkVersion
+        targetSdkVersion qtTargetSdkVersion
+        ndk.abiFilters = qtTargetAbiList.split(",")
+    }
+
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+    }
+}

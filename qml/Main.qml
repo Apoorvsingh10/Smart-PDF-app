@@ -19,10 +19,7 @@ ApplicationWindow {
         id: mainViewModel
     }
 
-    ToastNotification {
-        id: toast
-        z: 100
-    }
+
 
     // Handle Android back button
     Shortcut {
@@ -49,7 +46,7 @@ ApplicationWindow {
             id: stackView
             Layout.fillWidth: true
             Layout.fillHeight: true
-            initialItem: homeScreen
+            initialItem: AuthManager.isAuthenticated ? homeScreen : loginScreen
 
             Keys.onBackPressed: function(event) {
                 handleBackButton()
@@ -81,6 +78,7 @@ ApplicationWindow {
 
         // Premium Bottom Navigation
         Rectangle {
+            visible: AuthManager.isAuthenticated
             Layout.fillWidth: true
             Layout.preferredHeight: Theme.bottomNavHeight
             color: Theme.surfaceContainer
@@ -307,6 +305,16 @@ ApplicationWindow {
         }
     }
 
+    Component {
+        id: loginScreen
+        LoginScreen {
+            onLoginSuccess: {
+                stackView.replace(homeScreen)
+            }
+            onShowToast: (msg, type) => toast.show(msg, type)
+        }
+    }
+
     // Enhanced NavBar Item Component
     component NavBarItem: Item {
         id: navItem
@@ -370,5 +378,10 @@ ApplicationWindow {
             anchors.fill: parent
             onClicked: parent.clicked()
         }
+    }
+
+    ToastNotification {
+        id: toast
+        z: 100
     }
 }

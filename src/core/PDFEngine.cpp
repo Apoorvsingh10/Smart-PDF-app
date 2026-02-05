@@ -7,7 +7,7 @@
 #include <QMetaObject>
 #include <QFile>
 #include <QFileInfo>
-#include <type_traits>
+
 
 #ifdef HAS_QT_PDF
 #include <QPdfDocument>
@@ -51,7 +51,7 @@ void PDFEngine::mergePDFs(const QStringList &inputFiles, const QString &outputFi
     setProgress(0);
     m_cancelled = false;
 
-    QtConcurrent::run([this, inputFiles, outputFile]() {
+    (void)QtConcurrent::run([this, inputFiles, outputFile]() {
 #ifdef HAS_QT_PDF
         // First, count total pages across all PDFs
         int totalPages = 0;
@@ -187,7 +187,7 @@ void PDFEngine::splitPDF(const QString &inputFile, const QString &outputDir, con
     setProgress(0);
     m_cancelled = false;
 
-    QtConcurrent::run([this, inputFile, outputDir, pages]() {
+    (void)QtConcurrent::run([this, inputFile, outputDir, pages]() {
 #ifdef HAS_QT_PDF
         // Parse input file path
         QString filePath = inputFile;
@@ -318,7 +318,7 @@ void PDFEngine::compressPDF(const QString &inputFile, const QString &outputFile,
     setProgress(0);
     m_cancelled = false;
 
-    QtConcurrent::run([this, inputFile, outputFile, quality]() {
+    (void)QtConcurrent::run([this, inputFile, outputFile, quality]() {
 #ifdef HAS_QT_PDF
         // Parse input file path
         QString filePath = inputFile;

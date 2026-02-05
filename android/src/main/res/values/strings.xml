@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PdfPilot</string>
+
+    <!-- Google Sign-In Configuration -->
+    <!-- Replace with your Web Client ID from Firebase Console -> Authentication -> Sign-in method -> Google -->
+    <string name="default_web_client_id">218412641508-2l4cajhg0jjj6t69pdkhhpecpe0nb2n4.apps.googleusercontent.com</string>
+
+
+</resources>

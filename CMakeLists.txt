@@ -60,10 +60,12 @@ qt_add_qml_module(appPDF_ToolKit
         src/utils/FolderManager.h src/utils/FolderManager.cpp
         src/utils/RecentActivityModel.h src/utils/RecentActivityModel.cpp
         src/utils/ShareUtils.h src/utils/ShareUtils.cpp
+        src/utils/AuthManager.h src/utils/AuthManager.cpp
     QML_FILES
         qml/Main.qml
         qml/theme/Theme.qml
         qml/screens/HomeScreen.qml
+        qml/screens/LoginScreen.qml
         qml/screens/ViewerScreen.qml
         qml/screens/MergeScreen.qml
         qml/screens/SplitScreen.qml

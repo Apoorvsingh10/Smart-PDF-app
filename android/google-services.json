@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "218412641508",
+    "project_id": "pdfpilot-39e85",
+    "storage_bucket": "pdfpilot-39e85.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:218412641508:android:97c84b2e0ee679459f90f1",
+        "android_client_info": {
+          "package_name": "com.pdfpilot.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "218412641508-2l4cajhg0jjj6t69pdkhhpecpe0nb2n4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDK2fnAhCr38i_jV5mJc3X80MzOPD-Bb30"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "218412641508-2l4cajhg0jjj6t69pdkhhpecpe0nb2n4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
