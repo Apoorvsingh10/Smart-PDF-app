@@ -45,6 +45,38 @@ public class FBAuth {
         sGoogleSignInClient = GoogleSignIn.getClient(activity, gso);
 
         Log.d(TAG, "FBAuth initialized");
+
+        // Check for existing signed-in user
+        checkCurrentUser();
+    }
+
+    // Check if user is already signed in (session persistence)
+    public static void checkCurrentUser() {
+        if (sAuth == null) {
+            Log.d(TAG, "checkCurrentUser: Auth not initialized");
+            return;
+        }
+
+        FirebaseUser user = sAuth.getCurrentUser();
+        if (user != null) {
+            Log.d(TAG, "checkCurrentUser: Found existing user - " + user.getDisplayName());
+            String photoUrl = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
+            String displayName = user.getDisplayName();
+            String email = user.getEmail();
+
+            // For anonymous users
+            if (user.isAnonymous()) {
+                displayName = "Guest User";
+                email = "";
+            }
+
+            onAuthSuccess(user.getUid(),
+                    displayName != null ? displayName : "User",
+                    email != null ? email : "",
+                    photoUrl);
+        } else {
+            Log.d(TAG, "checkCurrentUser: No existing user");
+        }
     }
 
     public static void signInWithGoogle() {

@@ -32,7 +32,7 @@ Page {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 160
-                
+
                 gradient: Gradient {
                     orientation: Gradient.Horizontal
                     GradientStop { position: 0.0; color: Theme.gradientStart }
@@ -60,6 +60,168 @@ Page {
                     opacity: 0.08
                 }
 
+                // Profile Avatar (Top Right)
+                Rectangle {
+                    id: profileButton
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    anchors.rightMargin: Theme.spacingMedium
+                    anchors.topMargin: Theme.spacingMedium
+                    width: 40
+                    height: 40
+                    radius: 20
+                    color: profileMouseArea.containsMouse ? "#FFFFFF40" : "#FFFFFF20"
+                    border.width: 2
+                    border.color: "#FFFFFF60"
+
+                    Behavior on color {
+                        ColorAnimation { duration: Theme.animationFast }
+                    }
+
+                    Image {
+                        id: profileImage
+                        anchors.centerIn: parent
+                        width: 32
+                        height: 32
+                        source: AuthManager.userPhotoUrl ? AuthManager.userPhotoUrl : ""
+                        visible: AuthManager.userPhotoUrl !== ""
+                        fillMode: Image.PreserveAspectCrop
+                        layer.enabled: true
+                        layer.effect: Item {
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: 16
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: 16
+                            color: "transparent"
+                            border.width: 1
+                            border.color: "#FFFFFF40"
+                        }
+                    }
+
+                    // Fallback: User initials or icon
+                    Label {
+                        anchors.centerIn: parent
+                        visible: !profileImage.visible
+                        text: AuthManager.userName ? AuthManager.userName.charAt(0).toUpperCase() : "U"
+                        font.pixelSize: Theme.fontSizeBody
+                        font.weight: Font.Bold
+                        color: "#FFFFFF"
+                    }
+
+                    MouseArea {
+                        id: profileMouseArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: profileMenu.open()
+                    }
+                }
+
+                // Profile Menu
+                Menu {
+                    id: profileMenu
+                    x: parent.width - width - Theme.spacingMedium
+                    y: profileButton.y + profileButton.height + Theme.spacingSmall
+                    width: 220
+
+                    background: Rectangle {
+                        implicitWidth: 220
+                        radius: Theme.radiusMedium
+                        color: Theme.surface
+                        border.width: 1
+                        border.color: Theme.outlineVariant
+
+                        Rectangle {
+                            anchors.fill: parent
+                            anchors.margins: -1
+                            z: -1
+                            radius: parent.radius + 2
+                            color: Theme.shadowMedium
+                            anchors.topMargin: 4
+                        }
+                    }
+
+                    Column {
+                        width: parent.width
+                        padding: Theme.spacingMedium
+                        spacing: Theme.spacingSmall
+
+                        // User info header
+                        Row {
+                            spacing: Theme.spacingSmall
+
+                            Rectangle {
+                                width: 44
+                                height: 44
+                                radius: 22
+                                color: Theme.primaryContainer
+
+                                Image {
+                                    anchors.centerIn: parent
+                                    width: 36
+                                    height: 36
+                                    source: AuthManager.userPhotoUrl ? AuthManager.userPhotoUrl : ""
+                                    visible: AuthManager.userPhotoUrl !== ""
+                                    fillMode: Image.PreserveAspectCrop
+                                }
+
+                                Label {
+                                    anchors.centerIn: parent
+                                    visible: !AuthManager.userPhotoUrl
+                                    text: AuthManager.userName ? AuthManager.userName.charAt(0).toUpperCase() : "U"
+                                    font.pixelSize: Theme.fontSizeTitle
+                                    font.weight: Font.Bold
+                                    color: Theme.primary
+                                }
+                            }
+
+                            Column {
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: 2
+
+                                Label {
+                                    text: AuthManager.userName || "User"
+                                    font.pixelSize: Theme.fontSizeBody
+                                    font.weight: Font.DemiBold
+                                    color: Theme.surfaceForeground
+                                    elide: Text.ElideRight
+                                    width: 140
+                                }
+
+                                Label {
+                                    text: AuthManager.userEmail || "Guest"
+                                    font.pixelSize: Theme.fontSizeCaption
+                                    color: Theme.surfaceVariantForeground
+                                    elide: Text.ElideRight
+                                    width: 140
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            width: parent.width - parent.padding * 2
+                            height: 1
+                            color: Theme.outlineVariant
+                            opacity: 0.5
+                        }
+                    }
+
+                    MenuItem {
+                        text: qsTr("Sign Out")
+                        icon.source: "qrc:/PDF_ToolKit/resources/icons/logout.svg"
+                        icon.color: Theme.error
+                        onTriggered: {
+                            AuthManager.signOut()
+                            profileMenu.close()
+                        }
+                    }
+                }
+
                 ColumnLayout {
                     anchors.fill: parent
                     anchors.leftMargin: Theme.spacingLarge
@@ -69,7 +231,7 @@ Page {
                     spacing: Theme.spacingSmall
 
                     Label {
-                        text: qsTr("PdfPilot")
+                        text: qsTr("Smart PDF")
                         font.pixelSize: Theme.fontSizeDisplay
                         font.weight: Font.Bold
                         color: "#FFFFFF"
