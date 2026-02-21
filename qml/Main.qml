@@ -9,7 +9,7 @@ ApplicationWindow {
     width: 400
     height: 800
     visible: true
-    title: qsTr("PdfPilot")
+    title: qsTr("Smart PDF")
 
     Material.theme: Theme.isDark ? Material.Dark : Material.Light
     Material.primary: Theme.primary
@@ -385,12 +385,12 @@ ApplicationWindow {
         z: 100
     }
 
-    // User Profile Button (Top Right)
+    // User Profile Button (Top Right) - Only visible on home screen
     UserProfileButton {
         id: userProfileButton
         anchors.right: parent.right
         anchors.top: parent.top
-        visible: AuthManager.isAuthenticated
+        visible: AuthManager.isAuthenticated && mainViewModel.currentTabIndex === 0
         nameText: AuthManager.userName
         emailText: AuthManager.userEmail
         photoSource: AuthManager.userPhotoUrl

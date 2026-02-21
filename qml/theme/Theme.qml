@@ -59,9 +59,29 @@ QtObject {
     readonly property color gradientEnd: "#D946EF"
     readonly property color gradientTertiary: "#14B8A6"
 
-    // Shadow colors
+    // Shadow colors with elevation levels
     readonly property color shadowLight: "#00000015"
     readonly property color shadowMedium: "#00000025"
+    readonly property color shadowHeavy: "#00000040"
+
+    // Material Design naming aliases (for compatibility)
+    readonly property color onSurface: surfaceForeground
+    readonly property color onSurfaceVariant: surfaceVariantForeground
+    readonly property color onBackground: backgroundForeground
+    readonly property color onPrimary: primaryForeground
+    readonly property color onSecondary: secondaryForeground
+    readonly property color onError: errorForeground
+
+    // Additional surface foreground variant
+    readonly property color surfaceForegroundVariant: "#78716C"
+
+    // Warning container
+    readonly property color warningContainer: "#FEF3C7"
+
+    // State properties
+    readonly property real disabledOpacity: 0.38
+    readonly property real hoverOpacity: 0.08
+    readonly property real pressedOpacity: 0.12
 
     // Spacing - Generous for breathing room
     readonly property int spacingTiny: 4

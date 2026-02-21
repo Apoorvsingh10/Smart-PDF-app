@@ -71,15 +71,15 @@ Page {
                 Layout.fillWidth: true
                 title: qsTr("Version")
                 subtitle: qsTr("1.0.0")
-                icon: "📱"
+                iconSource: "qrc:/PDF_ToolKit/resources/icons/settings.svg"
                 accentColor: Theme.tertiary
             }
 
             SettingsItem {
                 Layout.fillWidth: true
                 title: qsTr("PdfPilot")
-                subtitle: qsTr("Built with Qt 6 and ❤️")
-                icon: "⚡"
+                subtitle: qsTr("Built with Qt 6")
+                iconSource: "qrc:/PDF_ToolKit/resources/icons/pdf.svg"
                 accentColor: Theme.primary
             }
 
@@ -102,10 +102,19 @@ Page {
                     anchors.margins: Theme.spacingMedium
                     spacing: Theme.spacingSmall
 
-                    Label {
+                    Rectangle {
                         Layout.alignment: Qt.AlignHCenter
-                        text: "🎨"
-                        font.pixelSize: Theme.fontSizeDisplay
+                        Layout.preferredWidth: 56
+                        Layout.preferredHeight: 56
+                        radius: 28
+                        color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.2)
+
+                        Image {
+                            anchors.centerIn: parent
+                            source: "qrc:/PDF_ToolKit/resources/icons/pdf.svg"
+                            sourceSize.width: Theme.iconSizeLarge
+                            sourceSize.height: Theme.iconSizeLarge
+                        }
                     }
 
                     Label {
@@ -153,7 +162,7 @@ Page {
         id: settingsItem
         property string title
         property string subtitle
-        property string icon
+        property string iconSource
         property color accentColor: Theme.primary
         property alias trailing: trailingContainer.children
 
@@ -178,10 +187,11 @@ Page {
                 radius: Theme.radiusSmall
                 color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.12)
 
-                Label {
+                Image {
                     anchors.centerIn: parent
-                    text: icon
-                    font.pixelSize: Theme.fontSizeTitle
+                    source: iconSource
+                    sourceSize.width: Theme.iconSizeMedium
+                    sourceSize.height: Theme.iconSizeMedium
                 }
             }
 

@@ -240,7 +240,7 @@ Page {
                         title: qsTr("Low Compression")
                         description: qsTr("Best quality, larger file")
                         reduction: qsTr("~20-30%")
-                        icon: "💎"
+                        iconSource: "qrc:/PDF_ToolKit/resources/icons/compress.svg"
                         isSelected: compressionLevel === 0
                         accentColor: Theme.success
                         onClicked: compressionLevel = 0
@@ -251,7 +251,7 @@ Page {
                         title: qsTr("Medium Compression")
                         description: qsTr("Balanced quality and size")
                         reduction: qsTr("~50-60%")
-                        icon: "⚡"
+                        iconSource: "qrc:/PDF_ToolKit/resources/icons/compress.svg"
                         isSelected: compressionLevel === 1
                         accentColor: Theme.tertiary
                         onClicked: compressionLevel = 1
@@ -262,7 +262,7 @@ Page {
                         title: qsTr("High Compression")
                         description: qsTr("Smallest file, lower quality")
                         reduction: qsTr("~70-80%")
-                        icon: "🗜️"
+                        iconSource: "qrc:/PDF_ToolKit/resources/icons/compress.svg"
                         isSelected: compressionLevel === 2
                         accentColor: Theme.warning
                         onClicked: compressionLevel = 2
@@ -301,7 +301,7 @@ Page {
         property string title
         property string description
         property string reduction
-        property string icon
+        property string iconSource
         property bool isSelected: false
         property color accentColor: Theme.primary
         signal clicked()
@@ -331,10 +331,11 @@ Page {
                 radius: Theme.radiusSmall
                 color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, isSelected ? 0.2 : 0.1)
 
-                Label {
+                Image {
                     anchors.centerIn: parent
-                    text: icon
-                    font.pixelSize: Theme.fontSizeTitle
+                    source: iconSource
+                    sourceSize.width: Theme.iconSizeMedium
+                    sourceSize.height: Theme.iconSizeMedium
                 }
             }
 

@@ -6,7 +6,7 @@ buildscript {
 
     dependencies {
         classpath 'com.android.tools.build:gradle:8.10.1'
-        classpath 'com.google.gms:google-services:4.4.0'
+        classpath 'com.google.gms:google-services:4.4.4'
     }
 }
 
@@ -23,7 +23,10 @@ dependencies {
     implementation 'androidx.core:core:1.16.0'
 
     // Firebase BoM (Bill of Materials) for version management
-    implementation platform('com.google.firebase:firebase-bom:32.7.0')
+    implementation platform('com.google.firebase:firebase-bom:34.8.0')
+
+    // Firebase Analytics
+    implementation 'com.google.firebase:firebase-analytics'
 
     // Firebase Authentication
     implementation 'com.google.firebase:firebase-auth'
@@ -31,8 +34,6 @@ dependencies {
     // Google Sign-In
     implementation 'com.google.android.gms:play-services-auth:20.7.0'
 
-    // Facebook Login
-    implementation 'com.facebook.android:facebook-login:16.3.0'
 }
 
 // Fix Kotlin stdlib duplicate class conflicts
@@ -42,7 +43,7 @@ configurations.all {
 }
 
 android {
-    namespace 'com.pdfpilot.app'
+    namespace 'io.smartpdf.app'
     compileSdkVersion androidCompileSdkVersion
     buildToolsVersion androidBuildToolsVersion
     ndkVersion = androidNdkVersion
@@ -79,7 +80,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.pdfpilot.app"
+        applicationId "io.smartpdf.app"
         resConfig "en"
         minSdkVersion qtMinSdkVersion
         targetSdkVersion qtTargetSdkVersion

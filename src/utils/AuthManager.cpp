@@ -45,7 +45,7 @@ static bool registerNativeMethods()
     };
 
     QJniEnvironment env;
-    jclass clazz = env.findClass("com/pdfpilot/app/FBAuth");
+    jclass clazz = env.findClass("io/smartpdf/app/FBAuth");
     if (clazz == nullptr) {
         qWarning() << "AuthManager: Could not find FBAuth class";
         return false;
@@ -81,7 +81,7 @@ AuthManager::AuthManager(QObject *parent)
 
     if (activity.isValid()) {
         QJniObject::callStaticMethod<void>(
-            "com/pdfpilot/app/FBAuth",
+            "io/smartpdf/app/FBAuth",
             "initialize",
             "(Landroid/app/Activity;)V",
             activity.object()
@@ -138,7 +138,7 @@ void AuthManager::loginWithGoogle()
 
 #ifdef Q_OS_ANDROID
     QJniObject::callStaticMethod<void>(
-        "com/pdfpilot/app/FBAuth",
+        "io/smartpdf/app/FBAuth",
         "signInWithGoogle",
         "()V"
     );
@@ -158,7 +158,7 @@ void AuthManager::loginAnonymously()
 
 #ifdef Q_OS_ANDROID
     QJniObject::callStaticMethod<void>(
-        "com/pdfpilot/app/FBAuth",
+        "io/smartpdf/app/FBAuth",
         "signInAnonymously",
         "()V"
     );
@@ -176,7 +176,7 @@ void AuthManager::signOut()
 
 #ifdef Q_OS_ANDROID
     QJniObject::callStaticMethod<void>(
-        "com/pdfpilot/app/FBAuth",
+        "io/smartpdf/app/FBAuth",
         "signOut",
         "()V"
     );

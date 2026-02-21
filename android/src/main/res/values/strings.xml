@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">PdfPilot</string>
+    <string name="app_name">Smart PDF</string>
 
     <!-- Google Sign-In Configuration -->
     <!-- Replace with your Web Client ID from Firebase Console -> Authentication -> Sign-in method -> Google -->

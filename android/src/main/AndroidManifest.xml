@@ -34,7 +34,7 @@
 
         <!-- Main Qt Activity -->
         <activity
-            android:name="com.pdfpilot.app.PdfPilotActivity"
+            android:name="io.smartpdf.app.SmartPdfActivity"
             android:configChanges="orientation|uiMode|screenLayout|screenSize|smallestScreenSize|layoutDirection|locale|fontScale|keyboard|keyboardHidden|navigation|mcc|mnc|density"
             android:label="@string/app_name"
             android:launchMode="singleTop"

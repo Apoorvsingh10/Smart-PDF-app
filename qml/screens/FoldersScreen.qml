@@ -48,13 +48,7 @@ Page {
                 icon.source: "qrc:/PDF_ToolKit/resources/icons/back.svg"
                 icon.width: Theme.iconSizeMedium
                 icon.height: Theme.iconSizeMedium
-                onClicked: {
-                    if (currentFolder !== "") {
-                        currentFolder = ""
-                    } else {
-                        root.back()
-                    }
-                }
+                onClicked: root.back()
             }
 
             Label {
@@ -233,10 +227,20 @@ Page {
                     anchors.centerIn: parent
                     spacing: Theme.spacingMedium
 
-                    Label {
+                    Rectangle {
                         Layout.alignment: Qt.AlignHCenter
-                        text: "📁"
-                        font.pixelSize: Theme.fontSizeDisplay
+                        Layout.preferredWidth: 72
+                        Layout.preferredHeight: 72
+                        radius: 36
+                        color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.1)
+
+                        Image {
+                            anchors.centerIn: parent
+                            source: "qrc:/PDF_ToolKit/resources/icons/folder.svg"
+                            sourceSize.width: Theme.iconSizeXLarge
+                            sourceSize.height: Theme.iconSizeXLarge
+                            opacity: 0.7
+                        }
                     }
 
                     Label {
@@ -357,10 +361,20 @@ Page {
                     anchors.centerIn: parent
                     spacing: Theme.spacingMedium
 
-                    Label {
+                    Rectangle {
                         Layout.alignment: Qt.AlignHCenter
-                        text: "📄"
-                        font.pixelSize: Theme.fontSizeDisplay
+                        Layout.preferredWidth: 72
+                        Layout.preferredHeight: 72
+                        radius: 36
+                        color: Qt.rgba(Theme.warning.r, Theme.warning.g, Theme.warning.b, 0.1)
+
+                        Image {
+                            anchors.centerIn: parent
+                            source: "qrc:/PDF_ToolKit/resources/icons/pdf.svg"
+                            sourceSize.width: Theme.iconSizeXLarge
+                            sourceSize.height: Theme.iconSizeXLarge
+                            opacity: 0.7
+                        }
                     }
 
                     Label {

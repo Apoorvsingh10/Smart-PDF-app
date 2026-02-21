@@ -319,9 +319,19 @@ Page {
                             anchors.centerIn: parent
                             spacing: Theme.spacingMedium
 
-                            Label {
-                                text: "📋"
-                                font.pixelSize: Theme.fontSizeHeadline
+                            Rectangle {
+                                Layout.preferredWidth: 44
+                                Layout.preferredHeight: 44
+                                radius: Theme.radiusSmall
+                                color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.1)
+
+                                Image {
+                                    anchors.centerIn: parent
+                                    source: "qrc:/PDF_ToolKit/resources/icons/pdf.svg"
+                                    sourceSize.width: Theme.iconSizeMedium
+                                    sourceSize.height: Theme.iconSizeMedium
+                                    opacity: 0.7
+                                }
                             }
 
                             ColumnLayout {
@@ -431,21 +441,41 @@ Page {
         property string folderName
         property int fileCount: 0
         property color accentColor: Theme.primary
+        property bool isHovered: false
         signal clicked()
 
         Layout.preferredWidth: 120
         Layout.preferredHeight: 90
         radius: Theme.radiusMedium
-        color: Theme.cardSurface
+        color: isHovered ? Theme.cardSurfaceHover : Theme.cardSurface
         border.width: 1
-        border.color: Theme.outlineVariant
+        border.color: isHovered ? accentColor : Theme.outlineVariant
 
         Behavior on scale {
             NumberAnimation { duration: Theme.animationFast; easing.type: Easing.OutCubic }
         }
-        
+
         Behavior on color {
             ColorAnimation { duration: Theme.animationFast }
+        }
+
+        Behavior on border.color {
+            ColorAnimation { duration: Theme.animationFast }
+        }
+
+        // Accent bar on hover (like ToolCard)
+        Rectangle {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 3
+            radius: Theme.radiusMedium
+            color: accentColor
+            opacity: folderCard.isHovered ? 1 : 0
+
+            Behavior on opacity {
+                NumberAnimation { duration: Theme.animationFast }
+            }
         }
 
         ColumnLayout {
@@ -457,13 +487,17 @@ Page {
                 Layout.preferredWidth: 36
                 Layout.preferredHeight: 36
                 radius: Theme.radiusSmall
-                color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, 0.15)
+                color: Qt.rgba(accentColor.r, accentColor.g, accentColor.b, folderCard.isHovered ? 0.25 : 0.15)
+
+                Behavior on color {
+                    ColorAnimation { duration: Theme.animationFast }
+                }
 
                 Image {
                     anchors.centerIn: parent
                     source: "qrc:/PDF_ToolKit/resources/icons/folder.svg"
-                    sourceSize.width: 20
-                    sourceSize.height: 20
+                    sourceSize.width: Theme.iconSizeSmall
+                    sourceSize.height: Theme.iconSizeSmall
                 }
             }
 
@@ -487,10 +521,22 @@ Page {
 
         MouseArea {
             anchors.fill: parent
+            hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
+
+            onEntered: {
+                folderCard.isHovered = true
+                folderCard.scale = 1.03
+            }
+
+            onExited: {
+                folderCard.isHovered = false
+                folderCard.scale = 1.0
+            }
+
             onClicked: folderCard.clicked()
             onPressed: folderCard.scale = 0.95
-            onReleased: folderCard.scale = 1.0
+            onReleased: folderCard.scale = folderCard.isHovered ? 1.03 : 1.0
         }
     }
 
