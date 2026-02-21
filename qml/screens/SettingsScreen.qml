@@ -77,7 +77,7 @@ Page {
 
             SettingsItem {
                 Layout.fillWidth: true
-                title: qsTr("PdfPilot")
+                title: qsTr("Smart PDF")
                 subtitle: qsTr("Built with Qt 6")
                 iconSource: "qrc:/PDF_ToolKit/resources/icons/pdf.svg"
                 accentColor: Theme.primary
@@ -119,7 +119,7 @@ Page {
 
                     Label {
                         Layout.alignment: Qt.AlignHCenter
-                        text: qsTr("Thank you for using PdfPilot!")
+                        text: qsTr("Thank you for using Smart PDF!")
                         font.pixelSize: Theme.fontSizeSubtitle
                         font.weight: Font.DemiBold
                         color: Theme.primaryContainerForeground

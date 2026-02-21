@@ -46,8 +46,8 @@ public class FBAuth {
 
         Log.d(TAG, "FBAuth initialized");
 
-        // Check for existing signed-in user
-        checkCurrentUser();
+        // Check for existing signed-in user (delay to let QML initialize)
+        sHandler.postDelayed(() -> checkCurrentUser(), 500);
     }
 
     // Check if user is already signed in (session persistence)

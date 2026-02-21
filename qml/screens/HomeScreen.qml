@@ -103,14 +103,15 @@ Page {
                         }
                     }
 
-                    // Fallback: User initials or icon
-                    Label {
+                    // Fallback: Default avatar icon
+                    Image {
                         anchors.centerIn: parent
+                        width: 24
+                        height: 24
                         visible: !profileImage.visible
-                        text: AuthManager.userName ? AuthManager.userName.charAt(0).toUpperCase() : "U"
-                        font.pixelSize: Theme.fontSizeBody
-                        font.weight: Font.Bold
-                        color: "#FFFFFF"
+                        source: "qrc:/PDF_ToolKit/resources/icons/default_user.svg"
+                        sourceSize.width: 24
+                        sourceSize.height: 24
                     }
 
                     MouseArea {
@@ -170,13 +171,14 @@ Page {
                                     fillMode: Image.PreserveAspectCrop
                                 }
 
-                                Label {
+                                Image {
                                     anchors.centerIn: parent
+                                    width: 28
+                                    height: 28
                                     visible: !AuthManager.userPhotoUrl
-                                    text: AuthManager.userName ? AuthManager.userName.charAt(0).toUpperCase() : "U"
-                                    font.pixelSize: Theme.fontSizeTitle
-                                    font.weight: Font.Bold
-                                    color: Theme.primary
+                                    source: "qrc:/PDF_ToolKit/resources/icons/default_user_dark.svg"
+                                    sourceSize.width: 28
+                                    sourceSize.height: 28
                                 }
                             }
 

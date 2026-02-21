@@ -92,6 +92,7 @@ qt_add_qml_module(appPDF_ToolKit
         resources/icons/folder.svg
         resources/icons/share.svg
         resources/icons/default_user.svg
+        resources/icons/default_user_dark.svg
         resources/icons/arrow_down.svg
         resources/icons/logout.svg
     RESOURCE_PREFIX "/"
