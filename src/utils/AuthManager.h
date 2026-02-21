@@ -25,7 +25,7 @@ public:
     QString userPhotoUrl() const;
 
     Q_INVOKABLE void loginWithGoogle();
-    Q_INVOKABLE void loginWithFacebook();
+
     Q_INVOKABLE void loginAnonymously(); // Guest mode
     Q_INVOKABLE void signOut();
 

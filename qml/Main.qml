@@ -384,4 +384,16 @@ ApplicationWindow {
         id: toast
         z: 100
     }
+
+    // User Profile Button (Top Right)
+    UserProfileButton {
+        id: userProfileButton
+        anchors.right: parent.right
+        anchors.top: parent.top
+        visible: AuthManager.isAuthenticated
+        nameText: AuthManager.userName
+        emailText: AuthManager.userEmail
+        photoSource: AuthManager.userPhotoUrl
+        z: 101 // Ensure it's above other elements
+    }
 }

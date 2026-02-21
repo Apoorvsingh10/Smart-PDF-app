@@ -75,6 +75,7 @@ qt_add_qml_module(appPDF_ToolKit
         qml/components/FilePickerButton.qml
         qml/components/ProgressOverlay.qml
         qml/components/ToastNotification.qml
+        qml/components/UserProfileButton.qml
     RESOURCES
         resources/icons/home.svg
         resources/icons/viewer.svg
@@ -90,6 +91,9 @@ qt_add_qml_module(appPDF_ToolKit
         resources/icons/save.svg
         resources/icons/folder.svg
         resources/icons/share.svg
+        resources/icons/default_user.svg
+        resources/icons/arrow_down.svg
+        resources/icons/logout.svg
     RESOURCE_PREFIX "/"
 )
 

@@ -150,23 +150,7 @@ void AuthManager::loginWithGoogle()
 #endif
 }
 
-void AuthManager::loginWithFacebook()
-{
-    qDebug() << "AuthManager: Starting Facebook Sign-In...";
 
-#ifdef Q_OS_ANDROID
-    QJniObject::callStaticMethod<void>(
-        "com/pdfpilot/app/FBAuth",
-        "signInWithFacebook",
-        "()V"
-    );
-#else
-    // Desktop fallback
-    QTimer::singleShot(1000, this, [this]() {
-        handleAuthSuccess("desktop_fb_user", "FB Desktop User", "fb@example.com", "");
-    });
-#endif
-}
 
 void AuthManager::loginAnonymously()
 {
