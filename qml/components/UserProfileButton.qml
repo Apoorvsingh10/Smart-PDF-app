@@ -32,26 +32,39 @@ Rectangle {
         anchors.centerIn: parent
         spacing: Theme.spacingSmall
 
-        Image {
-            id: userImage
+        // Circular profile image container
+        Rectangle {
             width: Theme.iconSizeLarge
             height: Theme.iconSizeLarge
-            source: root.photoSource ? root.photoSource : "qrc:/PDF_ToolKit/resources/icons/default_user.svg"
-            fillMode: Image.PreserveAspectCrop
+            radius: width / 2
+            color: Theme.primaryContainer
             clip: true
-            sourceSize.width: Theme.iconSizeLarge
-            sourceSize.height: Theme.iconSizeLarge
+            border.color: mouseArea.containsMouse ? Theme.primary : Theme.outlineVariant
+            border.width: mouseArea.containsMouse ? 2 : 1
 
-            Rectangle {
+            Behavior on border.color {
+                ColorAnimation { duration: Theme.animationFast }
+            }
+
+            Image {
+                id: userImage
                 anchors.fill: parent
-                radius: width / 2
-                color: "transparent"
-                border.color: mouseArea.containsMouse ? Theme.primary : Theme.outlineVariant
-                border.width: mouseArea.containsMouse ? 2 : 1
+                source: root.photoSource ? root.photoSource : ""
+                fillMode: Image.PreserveAspectCrop
+                visible: root.photoSource !== ""
+                asynchronous: true
+                cache: true
+            }
 
-                Behavior on border.color {
-                    ColorAnimation { duration: Theme.animationFast }
-                }
+            // Fallback icon
+            Image {
+                anchors.centerIn: parent
+                width: Theme.iconSizeMedium
+                height: Theme.iconSizeMedium
+                source: "qrc:/PDF_ToolKit/resources/icons/default_user.svg"
+                visible: !root.photoSource || root.photoSource === ""
+                sourceSize.width: Theme.iconSizeMedium
+                sourceSize.height: Theme.iconSizeMedium
             }
         }
 
@@ -135,21 +148,35 @@ Rectangle {
 
             RowLayout {
                 spacing: Theme.spacingSmall
-                Image {
+
+                // Circular profile image in menu
+                Rectangle {
                     width: Theme.iconSizeMedium
                     height: Theme.iconSizeMedium
-                    source: root.photoSource ? root.photoSource : "qrc:/PDF_ToolKit/resources/icons/default_user.svg"
-                    fillMode: Image.PreserveAspectCrop
+                    radius: width / 2
+                    color: Theme.primaryContainer
                     clip: true
-                    sourceSize.width: Theme.iconSizeMedium
-                    sourceSize.height: Theme.iconSizeMedium
+                    border.color: Theme.outlineVariant
+                    border.width: 1
 
-                    Rectangle {
+                    Image {
                         anchors.fill: parent
-                        radius: width / 2
-                        color: "transparent"
-                        border.color: Theme.outlineVariant
-                        border.width: 1
+                        source: root.photoSource ? root.photoSource : ""
+                        fillMode: Image.PreserveAspectCrop
+                        visible: root.photoSource !== ""
+                        asynchronous: true
+                        cache: true
+                    }
+
+                    // Fallback icon
+                    Image {
+                        anchors.centerIn: parent
+                        width: Theme.iconSizeSmall
+                        height: Theme.iconSizeSmall
+                        source: "qrc:/PDF_ToolKit/resources/icons/default_user.svg"
+                        visible: !root.photoSource || root.photoSource === ""
+                        sourceSize.width: Theme.iconSizeSmall
+                        sourceSize.height: Theme.iconSizeSmall
                     }
                 }
                 ColumnLayout {

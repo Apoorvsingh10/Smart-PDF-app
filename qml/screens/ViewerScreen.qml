@@ -27,6 +27,7 @@ Page {
     signal back()
     signal saved(string fileUrl)
     signal showToast(string message, string type)
+    signal openAI(url pdfPath, string fileName, string pdfText)
 
     background: Rectangle {
         color: Theme.background
@@ -132,6 +133,24 @@ Page {
 
                 ToolTip.visible: hovered
                 ToolTip.text: root.isPreview && !root.isSaved ? qsTr("Save & Share") : qsTr("Share PDF")
+            }
+
+            ToolButton {
+                icon.source: "qrc:/PDF_ToolKit/resources/icons/ai.svg"
+                icon.width: Theme.iconSizeMedium
+                icon.height: Theme.iconSizeMedium
+                visible: pdfDocument.isLoaded
+                onClicked: {
+                    var pdfText = PDFTextExtractor.extractText(pdfDocument.filePath)
+                    if (pdfText.length > 0) {
+                        root.openAI(root.source, pdfDocument.fileName, pdfText)
+                    } else {
+                        root.showToast(qsTr("Could not extract text from PDF. The PDF may be image-based."), "error")
+                    }
+                }
+
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("AI Assistant")
             }
 
             ToolButton {

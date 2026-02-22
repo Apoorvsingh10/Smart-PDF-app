@@ -1,8 +1,12 @@
 
 # User specific
-log1.txt
-prompt.txt
+
 .claude/
+
+# Environment files with secrets
+.env
+*.env
+.env.*
 
 # Build directories
 build/

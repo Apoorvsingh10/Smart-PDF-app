@@ -3,6 +3,9 @@
 #include <QQuickStyle>
 #include <QUrl>
 
+// Include to ensure JNI functions are linked
+#include "utils/FileReceiver.h"
+
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);

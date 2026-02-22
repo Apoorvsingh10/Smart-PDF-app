@@ -115,10 +115,11 @@ Rectangle {
                     radius: 20
                     color: Theme.primaryContainer
 
-                    Label {
+                    Image {
                         anchors.centerIn: parent
-                        text: "📄"
-                        font.pixelSize: Theme.fontSizeTitle
+                        source: "qrc:/PDF_ToolKit/resources/icons/pdf.svg"
+                        sourceSize.width: Theme.iconSizeMedium
+                        sourceSize.height: Theme.iconSizeMedium
                     }
                 }
             }

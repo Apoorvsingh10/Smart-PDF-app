@@ -1,0 +1,571 @@
+Here are step-by-step prompts for Claude Code. Run each one, test, then move to next.
+
+---
+
+## Step 1: Project Setup & Basic Structure
+
+```
+Create a Qt 6.10.1 Android app called "PDFKit Private" with CMake build system.
+
+Project requirements:
+- Target Android API 24+ with 16KB page size alignment (Android 15 compliance)
+- App package name: com.yourname.pdfkitprivate
+- 100% offline - NO network permissions in manifest
+
+Create this structure:
+PDFKitPrivate/
+├── CMakeLists.txt
+├── android/
+│   ├── AndroidManifest.xml (NO internet permission)
+│   └── res/
+│       ├── values/
+│       │   └── strings.xml
+│       └── drawable/
+├── src/
+│   ├── main.cpp
+│   └── core/
+│       └── PDFEngine.h (empty class for now)
+├── qml/
+│   ├── Main.qml
+│   ├── Theme.qml (colors, fonts - dark theme)
+│   └── components/
+│       └── PrivacyBadge.qml
+└── resources/
+    └── qml.qrc
+
+Main.qml should show:
+1. App title "PDFKit Private" 
+2. Tagline "100% Offline • Your files never leave your device"
+3. A PrivacyBadge component showing a shield icon
+4. 5 placeholder buttons for: Compress, Merge, PDF to Word, Sign PDF, PDF to Images
+5. Bottom text: "Pro: ₹199 one-time"
+
+Use Qt Quick Controls Material style with dark theme.
+Make it build and run showing this home screen.
+```
+
+---
+
+## Step 2: File Picker & PDF Viewer
+
+```
+Add PDF file picking and viewing capability to PDFKitPrivate.
+
+Requirements:
+1. Use Qt 6's native file dialog for Android (FileDialog from Qt.labs.platform)
+2. Handle Android scoped storage (content:// URIs)
+3. Copy selected file to app's private storage for processing
+
+Create/modify these files:
+
+src/core/FileHandler.h/.cpp:
+- pickPDFFile() - opens Android file picker, returns local path
+- copyToPrivateStorage(contentUri) - copies file to app cache
+- getPrivateStoragePath() - returns app's cache directory
+
+src/core/PDFDocument.h/.cpp:
+- loadFromPath(QString path) - loads PDF
+- pageCount() - returns number of pages
+- getPageImage(int pageNum, int dpi) - renders page as QImage
+
+qml/screens/ViewerScreen.qml:
+- Shows PDF pages in a scrollable ListView
+- Pinch to zoom
+- Page counter "Page X of Y"
+- Back button to home
+
+qml/Main.qml:
+- Add StackView navigation
+- "Open PDF" button that triggers file picker
+- Navigate to ViewerScreen after PDF loads
+
+Use Qt6::Pdf module for PDF rendering (QPdfDocument).
+Test: User can pick a PDF and view all pages.
+```
+
+---
+
+## Step 3: PDF Compression
+
+```
+Add PDF compression feature to PDFKitPrivate.
+
+Requirements:
+- Compress PDF by reducing image quality and optimizing structure
+- Three compression levels for Pro (Free tier: medium only)
+- Show before/after file size
+- Save compressed file to user-chosen location
+
+Create/modify:
+
+src/core/PDFCompressor.h/.cpp:
+- compress(inputPath, outputPath, level) 
+- Levels: LOW (80% quality), MEDIUM (60%), HIGH (40%)
+- Returns: original size, compressed size, compression ratio
+- Use PoDoFo or QPdfWriter to rewrite PDF with compressed images
+
+qml/screens/CompressScreen.qml:
+- "Select PDF" button
+- Show selected file name and size
+- Quality selector (Low/Medium/High) - Medium only for free
+- "Compress" button with progress indicator
+- Results card showing:
+  - Original: X.X MB
+  - Compressed: X.X MB  
+  - Saved: XX%
+- "Save" button to export compressed file
+- Privacy reminder: "Compressed offline on your device"
+
+src/viewmodels/CompressViewModel.h/.cpp:
+- Handle UI state (idle, processing, done, error)
+- Track free tier usage (2 compressions/day)
+- Expose properties to QML via Q_PROPERTY
+
+Add compression to home screen navigation.
+Test: Pick PDF → Compress → Save → Verify smaller file works.
+```
+
+---
+
+## Step 4: PDF Merge
+
+```
+Add PDF merge feature to PDFKitPrivate.
+
+Requirements:
+- Merge multiple PDFs into one
+- Drag to reorder before merging
+- Free tier: max 2 files
+- Pro: unlimited files
+
+Create/modify:
+
+src/core/PDFMerger.h/.cpp:
+- addFile(QString path) - add PDF to merge list
+- removeFile(int index)
+- reorderFiles(int from, int to)
+- merge(QString outputPath) - combines all PDFs
+- getFileList() - returns list with name, page count, size
+
+qml/screens/MergeScreen.qml:
+- "Add PDF" button (disabled after 2 files for free tier)
+- ListView showing added files:
+  - File name
+  - Page count
+  - Size
+  - Drag handle for reordering
+  - Delete button (X)
+- "Merge" button with progress
+- Result: show merged file size and page count
+- "Save" button
+- Upgrade prompt if free tier tries to add 3rd file
+
+qml/components/DraggableFileCard.qml:
+- Reusable card for file list items
+- Supports drag and drop reordering
+
+src/viewmodels/MergeViewModel.h/.cpp:
+- QAbstractListModel for file list
+- Track free tier limit
+- Handle reordering logic
+
+Test: Add 2 PDFs → Reorder → Merge → Save → Verify merged PDF.
+```
+
+---
+
+## Step 5: PDF to Word Conversion
+
+```
+Add PDF to Word conversion feature to PDFKitPrivate.
+
+This is the hero feature. Requirements:
+- Extract text from PDF preserving basic formatting
+- Generate .docx file
+- Handle multi-page documents
+- Pro feature only (show preview for free tier)
+
+Create/modify:
+
+src/core/PDFToWordConverter.h/.cpp:
+- convert(inputPdfPath, outputDocxPath) - main conversion
+- extractText(pdfPath) - get all text with position info
+- Use QPdfDocument for text extraction
+- Generate DOCX using simple XML structure:
+  - word/document.xml (content)
+  - word/styles.xml (basic styles)
+  - [Content_Types].xml
+  - _rels/.rels
+  - Package as ZIP with .docx extension
+
+src/core/DocxWriter.h/.cpp:
+- createDocument()
+- addParagraph(text, style)
+- addPageBreak()
+- save(path) - writes the .docx file
+
+qml/screens/ConvertScreen.qml:
+- "Select PDF" button
+- Preview panel showing extracted text (first page for free)
+- "Convert to Word" button (Pro only, show upgrade for free)
+- Progress indicator
+- "Save .docx" button
+- Note: "Works best with text-based PDFs"
+
+qml/components/UpgradePrompt.qml:
+- Reusable popup for Pro features
+- "Unlock PDF to Word + all features"
+- "₹199 one-time purchase"
+- "Buy Now" button (placeholder for now)
+
+Conversion quality notes:
+- Preserve paragraph breaks
+- Basic font sizing (headings vs body)
+- Don't worry about complex layouts, tables, images initially
+- Be honest: "Basic formatting preserved. Complex layouts may vary."
+
+Test: Convert text-heavy PDF → Open .docx in Word/Google Docs → Text should be editable.
+```
+
+---
+
+## Step 6: Digital Signature
+
+```
+Add digital signature feature to PDFKitPrivate.
+
+Requirements:
+- Draw signature with finger/stylus
+- Type signature with cursive font
+- Place signature anywhere on PDF page
+- Resize signature
+- Flatten into PDF (non-editable)
+- Pro feature
+
+Create/modify:
+
+src/core/PDFSigner.h/.cpp:
+- addSignature(pdfPath, signatureImage, page, x, y, width, height)
+- flattenPDF(inputPath, outputPath) - merge signature into PDF
+- Use QPdfWriter + QPainter to overlay signature
+
+qml/screens/SignScreen.qml:
+- "Select PDF" button
+- PDF page preview (current page to sign)
+- Page navigation (prev/next)
+- Signature mode toggle: Draw | Type
+- For Draw mode:
+  - Canvas component for drawing
+  - Clear button
+  - Stroke width selector
+  - Color selector (black/blue)
+- For Type mode:
+  - TextInput field
+  - Cursive font preview
+- "Place Signature" button
+- Signature overlay on PDF preview:
+  - Draggable to position
+  - Resize handles
+- "Apply & Save" button
+- "Save Signed PDF" 
+
+qml/components/SignatureCanvas.qml:
+- Canvas item for freehand drawing
+- Captures touch/mouse input
+- Exports as transparent PNG
+
+qml/components/SignaturePlacer.qml:
+- Draggable, resizable signature overlay
+- Position tracking
+
+src/viewmodels/SignViewModel.h/.cpp:
+- Track current page
+- Store signature image
+- Store signature position and size
+
+Test: Open PDF → Draw signature → Place on page 1 → Save → Verify signature is embedded.
+```
+
+---
+
+## Step 7: PDF to Images
+
+```
+Add PDF to Images feature to PDFKitPrivate.
+
+Requirements:
+- Convert PDF pages to PNG/JPG images
+- Select all pages or specific range
+- Choose quality/DPI
+- Pro feature
+
+Create/modify:
+
+src/core/PDFToImageConverter.h/.cpp:
+- convertAll(pdfPath, outputDir, format, dpi)
+- convertPage(pdfPath, pageNum, outputPath, format, dpi)
+- convertRange(pdfPath, startPage, endPage, outputDir, format, dpi)
+- Formats: PNG, JPG
+- DPI options: 72 (screen), 150 (standard), 300 (print)
+- Use QPdfDocument::render()
+
+qml/screens/PdfToImageScreen.qml:
+- "Select PDF" button
+- Show page thumbnails grid
+- Selection mode:
+  - "All pages" radio
+  - "Page range" radio with from/to inputs
+  - Tap thumbnails to select individual pages
+- Format selector: PNG | JPG
+- Quality/DPI selector: Screen (72) | Standard (150) | Print (300)
+- "Convert" button with progress (X of Y pages)
+- Result: show output folder path
+- "Open Folder" button to view images
+- Share button to share images
+
+src/viewmodels/PdfToImageViewModel.h/.cpp:
+- Page selection state
+- Conversion progress tracking
+- Output management
+
+Test: Open PDF → Select pages 1-3 → Convert to PNG 150dpi → Images saved correctly.
+```
+
+---
+
+## Step 8: Pro Purchase & Usage Limits
+
+```
+Add Pro purchase flow and free tier limits to PDFKitPrivate.
+
+Requirements:
+- Track free tier usage (stored locally)
+- Implement purchase flow (Google Play Billing)
+- Unlock all features after purchase
+- No server validation (trust device, privacy-first)
+
+Create/modify:
+
+src/core/LicenseManager.h/.cpp:
+- isPro() - check if Pro purchased
+- getFreeUsageToday(feature) - get usage count
+- incrementFreeUsage(feature) - track usage
+- purchasePro() - trigger Google Play purchase
+- restorePurchase() - restore existing purchase
+- Store purchase state in QSettings (encrypted)
+- Daily usage resets at midnight local time
+
+Free tier limits:
+- Compress: 2/day
+- Merge: 2 files max, 2 merges/day
+- PDF to Word: Preview only (first page text)
+- Sign PDF: Watermark "Created with PDFKit Private"
+- PDF to Images: First 2 pages only
+
+src/core/BillingManager.h/.cpp (Android-specific):
+- Connect to Google Play Billing Library via JNI
+- Product ID: "pro_lifetime"
+- Handle purchase callbacks
+- Note: For MVP, can use placeholder that just sets isPro=true
+
+qml/components/UpgradePrompt.qml (update):
+- Show feature being limited
+- Show what Pro unlocks
+- Price: ₹199
+- "Purchase" button triggers BillingManager
+
+qml/components/UsageBadge.qml:
+- Shows "2/2 used today" for free features
+- Shows "∞" for Pro users
+
+qml/screens/SettingsScreen.qml:
+- App version
+- "Restore Purchase" button
+- "Pro Status: Free / Pro"
+- Privacy policy link
+- "Rate App" link
+- "About" section with privacy message
+
+Update all feature screens to check limits before processing.
+
+Test: Use free compression 2x → 3rd attempt shows upgrade prompt → "Buy" marks as Pro → Unlimited access.
+```
+
+---
+
+## Step 9: Polish & Privacy UI
+
+```
+Polish the UI and add privacy-first messaging throughout PDFKitPrivate.
+
+Requirements:
+- Consistent dark theme
+- Privacy badges and messaging
+- Smooth animations
+- Professional look
+
+Create/modify:
+
+qml/Theme.qml (update):
+colors:
+  background: "#121212"
+  surface: "#1E1E1E"
+  primary: "#4CAF50" (green - trust color)
+  accent: "#81C784"
+  text: "#FFFFFF"
+  textSecondary: "#B0B0B0"
+  error: "#CF6679"
+  
+fonts:
+  title: 24sp bold
+  subtitle: 18sp medium
+  body: 14sp regular
+  caption: 12sp
+
+spacing:
+  small: 8dp
+  medium: 16dp
+  large: 24dp
+
+qml/components/PrivacyBadge.qml (update):
+- Shield icon with checkmark
+- "100% Offline" text
+- Subtle green glow animation
+- Tap to show privacy info popup
+
+qml/components/ProcessingOverlay.qml:
+- Fullscreen semi-transparent overlay
+- Circular progress indicator
+- "Processing offline..." text
+- Privacy shield icon
+
+qml/components/FeatureCard.qml:
+- Reusable card for home screen features
+- Icon, title, description
+- Pro badge if applicable
+- Usage count for free tier
+- Ripple effect on tap
+
+qml/Main.qml (update home screen):
+- App logo/icon at top
+- PrivacyBadge prominently displayed
+- Grid of FeatureCards (2 columns)
+- Each card shows feature with icon:
+  - Compress (archive icon)
+  - Merge (layers icon)
+  - PDF to Word (file-text icon)
+  - Sign PDF (pen icon)
+  - PDF to Images (image icon)
+- Settings gear icon in top right
+- Bottom banner: "Your documents never leave your device"
+
+Add subtle animations:
+- Screen transitions (slide)
+- Button press feedback
+- Success checkmark animation
+- Progress animations
+
+qml/screens/OnboardingScreen.qml:
+- First launch only
+- 3 slides:
+  1. "Welcome to PDFKit Private" + app icon
+  2. "100% Offline Processing" + shield graphic + "Your files never touch the internet"
+  3. "All-in-One PDF Tools" + feature icons + "Get Started" button
+- Dots indicator
+- Skip button
+- Store onboarding_complete in QSettings
+
+Test: Fresh install → See onboarding → Home screen looks professional → All features accessible.
+```
+
+---
+
+## Step 10: Final Build & Play Store Prep
+
+```
+Prepare PDFKitPrivate for Play Store release.
+
+Requirements:
+- Release build configuration
+- App signing
+- 16KB page alignment (Android 15)
+- Play Store assets
+
+Update CMakeLists.txt for release:
+- Set version: 1.0.0 (versionCode: 1)
+- Enable Release build optimizations
+- Strip debug symbols
+- Enable LTO (Link Time Optimization)
+
+Update android/AndroidManifest.xml:
+- Verify NO internet permissions
+- Add proper app metadata
+- Set android:extractNativeLibs="true"
+- Target SDK 35
+- Min SDK 24
+
+Update android/build.gradle:
+- Configure signing (placeholder for keystore)
+- Enable R8/ProGuard
+- Set 16KB page alignment:
+  packagingOptions {
+    jniLibs {
+      useLegacyPackaging = true
+    }
+  }
+- Generate AAB (Android App Bundle)
+
+Create android/res/ assets:
+- ic_launcher.png (all densities: mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi)
+- Suggest: Shield icon with "PDF" text, green accent
+- feature_graphic.png (1024x500) for Play Store
+- screenshots/ folder structure
+
+Create STORE_LISTING.md with:
+- App name: "PDFKit Private - 100% Offline PDF Tools"
+- Short description (80 chars): "Compress, merge, convert PDFs offline. Your files never leave your device."
+- Full description (4000 chars): Privacy-focused messaging, feature list, comparison to cloud apps
+- Keywords: pdf offline, pdf compressor no internet, private pdf editor, pdf to word offline
+- Category: Productivity
+- Content rating: Everyone
+- Privacy policy URL placeholder
+
+Create README.md:
+- Build instructions
+- Feature list
+- Architecture overview
+- License (your choice)
+
+Build commands:
+mkdir build-release && cd build-release
+qt-cmake -DCMAKE_BUILD_TYPE=Release -DANDROID_ABI=arm64-v8a ..
+cmake --build . --target aab
+
+Test: Build release AAB → Install on device → All features work → Ready for Play Store upload.
+```
+
+---
+
+## Usage Instructions
+
+1. **Run Step 1** → Verify app launches with home screen
+2. **Run Step 2** → Verify you can open and view PDFs
+3. **Run Step 3** → Verify compression works
+4. **Continue sequentially...**
+
+Each step builds on previous. Don't skip ahead.
+
+If Claude Code hits limits mid-step, say:
+```
+Continue from where you stopped. We were implementing [feature name].
+```
+
+If build fails:
+```
+Build failed with this error: [paste error]
+Fix it and continue.
+```
+
+---
+
+Want me to save these prompts to a file you can reference?

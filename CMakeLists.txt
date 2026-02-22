@@ -19,6 +19,7 @@ find_package(Qt6 6.5 REQUIRED COMPONENTS
     QuickControls2
     Concurrent
     Svg
+    Network
 )
 
 # Qt PDF is now available (installed via Maintenance Tool)
@@ -61,6 +62,11 @@ qt_add_qml_module(appPDF_ToolKit
         src/utils/RecentActivityModel.h src/utils/RecentActivityModel.cpp
         src/utils/ShareUtils.h src/utils/ShareUtils.cpp
         src/utils/AuthManager.h src/utils/AuthManager.cpp
+        src/utils/AIManager.h src/utils/AIManager.cpp
+        src/utils/PDFTextExtractor.h src/utils/PDFTextExtractor.cpp
+        src/utils/SubscriptionManager.h src/utils/SubscriptionManager.cpp
+        src/utils/PaymentManager.h src/utils/PaymentManager.cpp
+        src/utils/FileReceiver.h src/utils/FileReceiver.cpp
     QML_FILES
         qml/Main.qml
         qml/theme/Theme.qml
@@ -72,7 +78,10 @@ qt_add_qml_module(appPDF_ToolKit
         qml/screens/CompressScreen.qml
         qml/screens/SettingsScreen.qml
         qml/screens/FoldersScreen.qml
+        qml/screens/AIScreen.qml
+        qml/screens/PaywallScreen.qml
         qml/components/FilePickerButton.qml
+        qml/components/PurchaseDialog.qml
         qml/components/ProgressOverlay.qml
         qml/components/ToastNotification.qml
         qml/components/UserProfileButton.qml
@@ -95,8 +104,19 @@ qt_add_qml_module(appPDF_ToolKit
         resources/icons/default_user_dark.svg
         resources/icons/arrow_down.svg
         resources/icons/logout.svg
+        resources/icons/ai.svg
     RESOURCE_PREFIX "/"
 )
+
+# Claude API key from environment variable (keeps it out of source control)
+if(DEFINED ENV{CLAUDE_API_KEY})
+    target_compile_definitions(appPDF_ToolKit PRIVATE
+        CLAUDE_API_KEY="$ENV{CLAUDE_API_KEY}"
+    )
+    message(STATUS "Claude API key configured from environment variable")
+else()
+    message(WARNING "CLAUDE_API_KEY environment variable not set - AI features will require manual key entry")
+endif()
 
 target_link_libraries(appPDF_ToolKit PRIVATE
     Qt6::Core
@@ -104,6 +124,7 @@ target_link_libraries(appPDF_ToolKit PRIVATE
     Qt6::QuickControls2
     Qt6::Concurrent
     Qt6::Svg
+    Qt6::Network
 )
 
 # Link PDF modules only if available
@@ -116,10 +137,21 @@ endif()
 
 # Android configuration
 if(ANDROID)
+    # Include the official Android OpenSSL cmake helper
+    # This properly sets up OpenSSL::SSL and OpenSSL::Crypto targets
+    include("$ENV{LOCALAPPDATA}/Android/Sdk/android_openssl/android_openssl.cmake")
+
+    # Use the helper function to add OpenSSL libraries to the target
+    # This automatically:
+    # - Links OpenSSL::SSL and OpenSSL::Crypto
+    # - Adds the .so files to QT_ANDROID_EXTRA_LIBS so they're bundled in the APK
+    add_android_openssl_libraries(appPDF_ToolKit)
+
     set_target_properties(appPDF_ToolKit PROPERTIES
         QT_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android"
         QT_ANDROID_TARGET_SDK_VERSION 34
         QT_ANDROID_MIN_SDK_VERSION 24
+        QT_ANDROID_ACTIVITY_NAME "io.smartpdf.app.SmartPdfActivity"
     )
 endif()
 

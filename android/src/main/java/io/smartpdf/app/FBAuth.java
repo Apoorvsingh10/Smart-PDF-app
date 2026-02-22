@@ -27,10 +27,18 @@ public class FBAuth {
     private static GoogleSignInClient sGoogleSignInClient;
     private static Handler sHandler = new Handler(Looper.getMainLooper());
     private static boolean sWaitingForSignIn = false;
+    private static boolean sNativeReady = false;
+
+    // Cached user info for when native isn't ready yet
+    private static String sCachedUserId = null;
+    private static String sCachedUserName = null;
+    private static String sCachedUserEmail = null;
+    private static String sCachedPhotoUrl = null;
 
     // Native methods to call back to C++
     public static native void onAuthSuccess(String userId, String userName, String userEmail, String photoUrl);
     public static native void onAuthError(String errorMessage);
+    public static native void onIdToken(String idToken);
 
     public static void initialize(Activity activity) {
         sActivity = activity;
@@ -46,11 +54,71 @@ public class FBAuth {
 
         Log.d(TAG, "FBAuth initialized");
 
-        // Check for existing signed-in user (delay to let QML initialize)
-        sHandler.postDelayed(() -> checkCurrentUser(), 500);
+        // Check for existing user but DON'T call native methods yet
+        checkAndCacheCurrentUser();
     }
 
-    // Check if user is already signed in (session persistence)
+    // Called by Qt when native library is ready
+    public static void setNativeReady() {
+        sNativeReady = true;
+        Log.d(TAG, "Native library is ready");
+
+        // If we have cached user info, send it now
+        if (sCachedUserId != null) {
+            Log.d(TAG, "Sending cached user info to native");
+            try {
+                onAuthSuccess(sCachedUserId, sCachedUserName, sCachedUserEmail, sCachedPhotoUrl);
+            } catch (Exception e) {
+                Log.e(TAG, "Error sending cached user info: " + e.getMessage());
+            }
+            // Clear cache
+            sCachedUserId = null;
+            sCachedUserName = null;
+            sCachedUserEmail = null;
+            sCachedPhotoUrl = null;
+        }
+    }
+
+    // Check for existing user and cache info (doesn't call native)
+    private static void checkAndCacheCurrentUser() {
+        if (sAuth == null) {
+            Log.d(TAG, "checkAndCacheCurrentUser: Auth not initialized");
+            return;
+        }
+
+        FirebaseUser user = sAuth.getCurrentUser();
+        if (user != null) {
+            Log.d(TAG, "checkAndCacheCurrentUser: Found existing user - " + user.getDisplayName());
+
+            sCachedUserId = user.getUid();
+            sCachedPhotoUrl = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
+            sCachedUserName = user.getDisplayName();
+            sCachedUserEmail = user.getEmail();
+
+            // For anonymous users
+            if (user.isAnonymous()) {
+                sCachedUserName = "Guest User";
+                sCachedUserEmail = "";
+            }
+
+            if (sCachedUserName == null) sCachedUserName = "User";
+            if (sCachedUserEmail == null) sCachedUserEmail = "";
+
+            // If native is already ready, send immediately
+            if (sNativeReady) {
+                try {
+                    onAuthSuccess(sCachedUserId, sCachedUserName, sCachedUserEmail, sCachedPhotoUrl);
+                    sCachedUserId = null;
+                } catch (Exception e) {
+                    Log.e(TAG, "Error calling onAuthSuccess: " + e.getMessage());
+                }
+            }
+        } else {
+            Log.d(TAG, "checkAndCacheCurrentUser: No existing user");
+        }
+    }
+
+    // Called from Qt - safe version that checks native ready state
     public static void checkCurrentUser() {
         if (sAuth == null) {
             Log.d(TAG, "checkCurrentUser: Auth not initialized");
@@ -64,16 +132,21 @@ public class FBAuth {
             String displayName = user.getDisplayName();
             String email = user.getEmail();
 
-            // For anonymous users
             if (user.isAnonymous()) {
                 displayName = "Guest User";
                 email = "";
             }
 
-            onAuthSuccess(user.getUid(),
-                    displayName != null ? displayName : "User",
-                    email != null ? email : "",
-                    photoUrl);
+            if (sNativeReady) {
+                try {
+                    onAuthSuccess(user.getUid(),
+                            displayName != null ? displayName : "User",
+                            email != null ? email : "",
+                            photoUrl);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error calling onAuthSuccess: " + e.getMessage());
+                }
+            }
         } else {
             Log.d(TAG, "checkCurrentUser: No existing user");
         }
@@ -81,13 +154,12 @@ public class FBAuth {
 
     public static void signInWithGoogle() {
         if (sActivity == null || sGoogleSignInClient == null) {
-            onAuthError("Google Sign-In not initialized");
+            safeOnAuthError("Google Sign-In not initialized");
             return;
         }
 
         Log.d(TAG, "Starting Google Sign-In...");
 
-        // First, try silent sign-in (for returning users)
         sGoogleSignInClient.silentSignIn()
             .addOnCompleteListener(sActivity, task -> {
                 if (task.isSuccessful()) {
@@ -105,8 +177,6 @@ public class FBAuth {
         Intent signInIntent = sGoogleSignInClient.getSignInIntent();
         sWaitingForSignIn = true;
         sActivity.startActivityForResult(signInIntent, RC_SIGN_IN);
-
-        // Start polling for result since Qt may intercept onActivityResult
         startPollingForSignIn();
     }
 
@@ -122,13 +192,11 @@ public class FBAuth {
                     sWaitingForSignIn = false;
                     firebaseAuthWithGoogle(account.getIdToken());
                 } else if (sWaitingForSignIn) {
-                    // Continue polling
                     sHandler.postDelayed(this, 500);
                 }
             }
         }, 1000);
 
-        // Stop polling after 60 seconds (user cancelled or timeout)
         sHandler.postDelayed(() -> {
             if (sWaitingForSignIn) {
                 sWaitingForSignIn = false;
@@ -139,7 +207,7 @@ public class FBAuth {
 
     public static void signInAnonymously() {
         if (sAuth == null) {
-            onAuthError("Firebase Auth not initialized");
+            safeOnAuthError("Firebase Auth not initialized");
             return;
         }
 
@@ -149,11 +217,11 @@ public class FBAuth {
                         Log.d(TAG, "Anonymous sign-in success");
                         FirebaseUser user = sAuth.getCurrentUser();
                         if (user != null) {
-                            onAuthSuccess(user.getUid(), "Guest User", "", "");
+                            safeOnAuthSuccess(user.getUid(), "Guest User", "", "");
                         }
                     } else {
                         Log.e(TAG, "Anonymous sign-in failed", task.getException());
-                        onAuthError("Guest sign-in failed: " +
+                        safeOnAuthError("Guest sign-in failed: " +
                                 (task.getException() != null ? task.getException().getMessage() : "Unknown error"));
                     }
                 });
@@ -167,11 +235,39 @@ public class FBAuth {
             sGoogleSignInClient.signOut();
         }
         sWaitingForSignIn = false;
-
         Log.d(TAG, "User signed out");
     }
 
-    // Called from Activity.onActivityResult if it works
+    public static void getIdToken() {
+        if (sAuth == null) {
+            Log.e(TAG, "getIdToken: Auth not initialized");
+            return;
+        }
+
+        FirebaseUser user = sAuth.getCurrentUser();
+        if (user == null) {
+            Log.e(TAG, "getIdToken: No current user");
+            return;
+        }
+
+        user.getIdToken(false)
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful() && task.getResult() != null) {
+                        String token = task.getResult().getToken();
+                        Log.d(TAG, "Got ID token, length: " + (token != null ? token.length() : 0));
+                        if (token != null && sNativeReady) {
+                            try {
+                                onIdToken(token);
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error calling onIdToken: " + e.getMessage());
+                            }
+                        }
+                    } else {
+                        Log.e(TAG, "Failed to get ID token", task.getException());
+                    }
+                });
+    }
+
     public static void handleActivityResult(int requestCode, int resultCode, Intent data) {
         Log.d(TAG, "handleActivityResult: requestCode=" + requestCode + ", resultCode=" + resultCode);
         if (requestCode == RC_SIGN_IN) {
@@ -183,7 +279,7 @@ public class FBAuth {
                 firebaseAuthWithGoogle(account.getIdToken());
             } catch (ApiException e) {
                 Log.e(TAG, "Google sign-in failed: " + e.getMessage() + " (Status Code: " + e.getStatusCode() + ")");
-                onAuthError("Google sign-in failed: " + e.getMessage() + " (Status Code: " + e.getStatusCode() + ")");
+                safeOnAuthError("Google sign-in failed: " + e.getMessage() + " (Status Code: " + e.getStatusCode() + ")");
             }
         }
     }
@@ -191,7 +287,7 @@ public class FBAuth {
     private static void firebaseAuthWithGoogle(String idToken) {
         if (idToken == null) {
             Log.e(TAG, "ID token is null");
-            onAuthError("Failed to get authentication token");
+            safeOnAuthError("Failed to get authentication token");
             return;
         }
 
@@ -203,16 +299,46 @@ public class FBAuth {
                         FirebaseUser user = sAuth.getCurrentUser();
                         if (user != null) {
                             String photoUrl = user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : "";
-                            onAuthSuccess(user.getUid(),
+                            safeOnAuthSuccess(user.getUid(),
                                     user.getDisplayName() != null ? user.getDisplayName() : "",
                                     user.getEmail() != null ? user.getEmail() : "",
                                     photoUrl);
                         }
                     } else {
                         Log.e(TAG, "Firebase auth with Google failed", task.getException());
-                        onAuthError("Authentication failed: " +
+                        safeOnAuthError("Authentication failed: " +
                                 (task.getException() != null ? task.getException().getMessage() : "Unknown error"));
                     }
                 });
+    }
+
+    // Safe wrappers that check native ready state
+    private static void safeOnAuthSuccess(String userId, String userName, String userEmail, String photoUrl) {
+        if (sNativeReady) {
+            try {
+                onAuthSuccess(userId, userName, userEmail, photoUrl);
+            } catch (Exception e) {
+                Log.e(TAG, "Error calling onAuthSuccess: " + e.getMessage());
+            }
+        } else {
+            // Cache for later
+            sCachedUserId = userId;
+            sCachedUserName = userName;
+            sCachedUserEmail = userEmail;
+            sCachedPhotoUrl = photoUrl;
+            Log.d(TAG, "Native not ready, cached auth success");
+        }
+    }
+
+    private static void safeOnAuthError(String errorMessage) {
+        if (sNativeReady) {
+            try {
+                onAuthError(errorMessage);
+            } catch (Exception e) {
+                Log.e(TAG, "Error calling onAuthError: " + e.getMessage());
+            }
+        } else {
+            Log.e(TAG, "Native not ready, auth error not sent: " + errorMessage);
+        }
     }
 }
