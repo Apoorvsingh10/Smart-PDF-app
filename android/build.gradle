@@ -34,6 +34,8 @@ dependencies {
     // Google Sign-In
     implementation 'com.google.android.gms:play-services-auth:20.7.0'
 
+    // Razorpay Payment SDK
+    implementation 'com.razorpay:checkout:1.6.40'
 }
 
 // Fix Kotlin stdlib duplicate class conflicts
@@ -51,7 +53,7 @@ android {
     sourceSets {
         main {
             manifest.srcFile 'AndroidManifest.xml'
-            java.srcDirs = [qtAndroidDir + '/src', 'src', 'java']
+            java.srcDirs = [qtAndroidDir + '/src', 'src', 'java', 'src/main/java']
             aidl.srcDirs = [qtAndroidDir + '/src', 'src', 'aidl']
             res.srcDirs = [qtAndroidDir + '/res', 'res']
             resources.srcDirs = ['resources']

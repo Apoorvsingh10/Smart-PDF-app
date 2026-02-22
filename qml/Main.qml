@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.Material
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import PDF_ToolKit 1.0
 
 ApplicationWindow {
@@ -19,7 +20,74 @@ ApplicationWindow {
         id: mainViewModel
     }
 
+    property string pendingFileToOpen: ""
 
+    // Handle auth state changes (for session restoration)
+    Connections {
+        target: AuthManager
+        function onUserChanged() {
+            if (AuthManager.isAuthenticated && stackView.currentItem && stackView.currentItem.objectName === "loginScreen") {
+                stackView.replace(homeScreen)
+                // Fetch subscription on login
+                SubscriptionManager.fetchSubscription()
+
+                // Check if there's a pending file to open after login
+                if (window.pendingFileToOpen !== "") {
+                    Qt.callLater(function() {
+                        mainViewModel.currentTabIndex = 1
+                        stackView.push(viewerScreen, { "source": window.pendingFileToOpen, "showBackButton": true })
+                        window.pendingFileToOpen = ""
+                    })
+                }
+            } else if (!AuthManager.isAuthenticated && stackView.currentItem && stackView.currentItem.objectName !== "loginScreen") {
+                stackView.replace(loginScreen)
+            }
+        }
+    }
+
+    // Handle incoming files (when app is opened with a PDF)
+    Connections {
+        target: FileReceiver
+        function onFileReceived(fileUri) {
+            console.log("Main: File received from external app:", fileUri)
+            if (AuthManager.isAuthenticated) {
+                // Open the file in viewer
+                mainViewModel.currentTabIndex = 1
+                stackView.push(viewerScreen, { "source": fileUri, "showBackButton": true })
+            } else {
+                // Store for later, after login
+                window.pendingFileToOpen = fileUri
+            }
+        }
+    }
+
+    // Check for pending file on startup
+    Component.onCompleted: {
+        FileReceiver.checkPendingFile()
+    }
+
+    // Handle PDF extraction completion
+    Connections {
+        target: PDFTextExtractor
+        function onExtractionComplete() {
+            // Set AIManager state
+            AIManager.isImageBased = PDFTextExtractor.isImageBased
+            AIManager.currentPdfText = PDFTextExtractor.extractedText
+            if (PDFTextExtractor.isImageBased) {
+                AIManager.currentPageImages = PDFTextExtractor.pageImages
+            }
+
+            // Navigate to AI screen
+            stackView.push(aiScreen, {
+                "pdfPath": fileDialogForAI.selectedFile,
+                "pdfFileName": FileUtils.getFileName(fileDialogForAI.selectedFile),
+                "pdfText": PDFTextExtractor.extractedText
+            })
+        }
+        function onErrorOccurred(error) {
+            toast.show(error, "error")
+        }
+    }
 
     // Handle Android back button
     Shortcut {
@@ -34,8 +102,10 @@ ApplicationWindow {
             // Go to home tab
             mainViewModel.currentTabIndex = 0
             stackView.replace(homeScreen)
+        } else {
+            // On home screen with depth 1 - exit app
+            Qt.quit()
         }
-        // If on home and depth is 1, do nothing (don't exit app)
     }
 
     ColumnLayout {
@@ -220,6 +290,12 @@ ApplicationWindow {
                 mainViewModel.currentTabIndex = 1
                 stackView.push(viewerScreen, { "source": filePath, "showBackButton": true })
             }
+            onOpenAI: {
+                fileDialogForAI.open()
+            }
+            onOpenPaywall: {
+                stackView.push(paywallScreen)
+            }
         }
     }
 
@@ -236,6 +312,13 @@ ApplicationWindow {
                 stackView.clear()
                 mainViewModel.currentTabIndex = 1
                 stackView.push(viewerScreen, { "source": fileUrl, "showBackButton": false })
+            }
+            onOpenAI: (pdfPath, fileName, pdfText) => {
+                stackView.push(aiScreen, {
+                    "pdfPath": pdfPath,
+                    "pdfFileName": fileName,
+                    "pdfText": pdfText
+                })
             }
         }
     }
@@ -290,7 +373,17 @@ ApplicationWindow {
 
     Component {
         id: settingsScreen
-        SettingsScreen {}
+        SettingsScreen {
+            onNavigateToPaywall: stackView.push(paywallScreen)
+        }
+    }
+
+    Component {
+        id: paywallScreen
+        PaywallScreen {
+            onBack: stackView.pop()
+            onShowToast: (msg, type) => toast.show(msg, type)
+        }
     }
 
     Component {
@@ -306,8 +399,18 @@ ApplicationWindow {
     }
 
     Component {
+        id: aiScreen
+        AIScreen {
+            onBack: stackView.pop()
+            onShowToast: (msg, type) => toast.show(msg, type)
+            onNavigateToPaywall: stackView.push(paywallScreen)
+        }
+    }
+
+    Component {
         id: loginScreen
         LoginScreen {
+            objectName: "loginScreen"
             onLoginSuccess: {
                 stackView.replace(homeScreen)
             }
@@ -380,20 +483,45 @@ ApplicationWindow {
         }
     }
 
+    // File dialog for AI feature (from HomeScreen)
+    FileDialog {
+        id: fileDialogForAI
+        title: qsTr("Select PDF for AI Analysis")
+        nameFilters: ["PDF files (*.pdf)"]
+        onAccepted: {
+            // Use the new extract method that handles both text and image-based PDFs
+            PDFTextExtractor.extractFromUrl(selectedFile)
+            // Navigation happens in the Connections handler above when extraction completes
+        }
+    }
+
+    // Extraction loading overlay
+    Rectangle {
+        anchors.fill: parent
+        color: Qt.rgba(Theme.background.r, Theme.background.g, Theme.background.b, 0.9)
+        visible: PDFTextExtractor.isExtracting
+        z: 99
+
+        Column {
+            anchors.centerIn: parent
+            spacing: Theme.spacingMedium
+
+            BusyIndicator {
+                anchors.horizontalCenter: parent.horizontalCenter
+                running: PDFTextExtractor.isExtracting
+            }
+
+            Label {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: qsTr("Extracting PDF content...")
+                font.pixelSize: Theme.fontSizeBody
+                color: Theme.surfaceForeground
+            }
+        }
+    }
+
     ToastNotification {
         id: toast
         z: 100
-    }
-
-    // User Profile Button (Top Right) - Only visible on home screen
-    UserProfileButton {
-        id: userProfileButton
-        anchors.right: parent.right
-        anchors.top: parent.top
-        visible: AuthManager.isAuthenticated && mainViewModel.currentTabIndex === 0
-        nameText: AuthManager.userName
-        emailText: AuthManager.userEmail
-        photoSource: AuthManager.userPhotoUrl
-        z: 101 // Ensure it's above other elements
     }
 }

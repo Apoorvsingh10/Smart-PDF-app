@@ -11,9 +11,11 @@ Page {
     signal openSplit()
     signal openCompress()
     signal openViewer()
+    signal openAI()
     signal openFolders()
     signal openFolder(string folderName)
     signal openFileInViewer(string filePath)
+    signal openPaywall()
 
     background: Rectangle {
         color: Theme.background
@@ -60,43 +62,146 @@ Page {
                     opacity: 0.08
                 }
 
-                // Profile Avatar (Top Right)
-                Rectangle {
-                    id: profileButton
+                // Top Right Row - Pro Badge + Profile
+                Row {
                     anchors.right: parent.right
                     anchors.top: parent.top
                     anchors.rightMargin: Theme.spacingMedium
                     anchors.topMargin: Theme.spacingMedium
-                    width: 40
-                    height: 40
-                    radius: 20
-                    color: profileMouseArea.containsMouse ? "#FFFFFF40" : "#FFFFFF20"
-                    border.width: 2
-                    border.color: "#FFFFFF60"
+                    spacing: Theme.spacingSmall
+
+                    // PRO Upgrade Button (only for non-premium)
+                    Rectangle {
+                        id: proUpgradeBtn
+                        visible: !SubscriptionManager.isPremium
+                        width: proRow.width + 16
+                        height: 32
+                        radius: 16
+                        color: proMouseArea.containsMouse ? "#FFFFFF" : "#FFFFFFEE"
+
+                        Behavior on color {
+                            ColorAnimation { duration: 150 }
+                        }
+
+                        Row {
+                            id: proRow
+                            anchors.centerIn: parent
+                            spacing: 6
+
+                            // Crown/Star icon
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "⭐"
+                                font.pixelSize: 12
+                            }
+
+                            Text {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "PRO"
+                                font.pixelSize: 12
+                                font.weight: Font.Bold
+                                font.letterSpacing: 0.5
+                                color: "#7C3AED"
+                            }
+                        }
+
+                        MouseArea {
+                            id: proMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.openPaywall()
+                        }
+                    }
+
+                    // Premium Badge (for premium users)
+                    Rectangle {
+                        visible: SubscriptionManager.isPremium
+                        width: premiumRow.width + 16
+                        height: 32
+                        radius: 16
+                        color: "#10B981"
+
+                        Row {
+                            id: premiumRow
+                            anchors.centerIn: parent
+                            spacing: 4
+
+                            Text {
+                                text: "✓"
+                                font.pixelSize: 12
+                                font.weight: Font.Bold
+                                color: "#FFFFFF"
+                            }
+
+                            Text {
+                                text: "PRO"
+                                font.pixelSize: 12
+                                font.weight: Font.Bold
+                                color: "#FFFFFF"
+                            }
+                        }
+                    }
+
+                    // Profile Avatar
+                    Rectangle {
+                        id: profileButton
+                        width: 40
+                        height: 40
+                        radius: 20
+                        color: profileMouseArea.containsMouse ? "#FFFFFF40" : "#FFFFFF20"
+                        border.width: 2
+                        border.color: "#FFFFFF60"
 
                     Behavior on color {
                         ColorAnimation { duration: Theme.animationFast }
                     }
 
-                    Image {
-                        id: profileImage
+                    // Profile image with circular clipping
+                    Item {
+                        id: profileImageContainer
                         anchors.centerIn: parent
                         width: 32
                         height: 32
-                        source: AuthManager.userPhotoUrl ? AuthManager.userPhotoUrl : ""
                         visible: AuthManager.userPhotoUrl !== ""
-                        fillMode: Image.PreserveAspectCrop
-                        layer.enabled: true
-                        layer.effect: Item {
-                            Rectangle {
+
+                        Rectangle {
+                            id: profileImageMask
+                            anchors.fill: parent
+                            radius: width / 2
+                            color: "white"
+                            visible: false
+                        }
+
+                        Image {
+                            id: profileImage
+                            anchors.fill: parent
+                            source: AuthManager.userPhotoUrl ? AuthManager.userPhotoUrl : ""
+                            fillMode: Image.PreserveAspectCrop
+                            visible: false
+                            asynchronous: true
+                            cache: true
+                        }
+
+                        // Use ShaderEffectSource and OpacityMask alternative
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: width / 2
+                            clip: true
+
+                            Image {
                                 anchors.fill: parent
-                                radius: 16
+                                source: AuthManager.userPhotoUrl ? AuthManager.userPhotoUrl : ""
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                cache: true
                             }
                         }
 
+                        // Border overlay
                         Rectangle {
                             anchors.fill: parent
-                            radius: 16
+                            radius: width / 2
                             color: "transparent"
                             border.width: 1
                             border.color: "#FFFFFF40"
@@ -122,6 +227,7 @@ Page {
                         onClicked: profileMenu.open()
                     }
                 }
+                } // End Row
 
                 // Profile Menu
                 Menu {
@@ -161,16 +267,19 @@ Page {
                                 height: 44
                                 radius: 22
                                 color: Theme.primaryContainer
+                                clip: true
 
+                                // Circular clipped image
                                 Image {
-                                    anchors.centerIn: parent
-                                    width: 36
-                                    height: 36
+                                    anchors.fill: parent
                                     source: AuthManager.userPhotoUrl ? AuthManager.userPhotoUrl : ""
                                     visible: AuthManager.userPhotoUrl !== ""
                                     fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true
+                                    cache: true
                                 }
 
+                                // Fallback icon
                                 Image {
                                     anchors.centerIn: parent
                                     width: 28
@@ -310,6 +419,12 @@ Page {
                             accentColor: Theme.warning
                             onClicked: root.openViewer()
                         }
+                    }
+
+                    // Premium AI Assistant Card - Full Width Outside Grid
+                    AIToolCard {
+                        Layout.fillWidth: true
+                        onClicked: root.openAI()
                     }
                 }
 
@@ -978,6 +1093,245 @@ Page {
             onClicked: card.clicked()
             onPressed: card.scale = 0.98
             onReleased: card.scale = card.isHovered ? 1.02 : 1.0
+        }
+    }
+
+    // Premium AI Tool Card - Standout Full Width Design
+    component AIToolCard: Rectangle {
+        id: aiCard
+        signal clicked()
+
+        implicitHeight: 100
+        radius: 16
+
+        property bool isHovered: false
+
+        // Premium gradient background
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: "#7C3AED" }
+            GradientStop { position: 0.5; color: "#8B5CF6" }
+            GradientStop { position: 1.0; color: "#A78BFA" }
+        }
+
+        Behavior on scale {
+            NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+        }
+
+        // Subtle shadow
+        Rectangle {
+            anchors.fill: parent
+            anchors.topMargin: 6
+            z: -1
+            radius: parent.radius
+            color: "#7C3AED"
+            opacity: 0.3
+        }
+
+        // Decorative circle patterns
+        Item {
+            anchors.fill: parent
+            clip: true
+
+            Rectangle {
+                x: parent.width - 60
+                y: -30
+                width: 120
+                height: 120
+                radius: 60
+                color: "#FFFFFF"
+                opacity: 0.1
+            }
+
+            Rectangle {
+                x: parent.width - 100
+                y: 40
+                width: 80
+                height: 80
+                radius: 40
+                color: "#FFFFFF"
+                opacity: 0.08
+            }
+        }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: Theme.spacingMedium
+            spacing: Theme.spacingMedium
+
+            // Custom AI Icon - Unique Brain-Circuit Design
+            Rectangle {
+                Layout.preferredWidth: 56
+                Layout.preferredHeight: 56
+                radius: 16
+                color: "#FFFFFF"
+                opacity: 0.2
+
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 48
+                    height: 48
+                    radius: 12
+                    color: "#FFFFFF"
+
+                    // Custom AI Icon using Canvas
+                    Canvas {
+                        id: aiIconCanvas
+                        anchors.centerIn: parent
+                        width: 28
+                        height: 28
+
+                        onPaint: {
+                            var ctx = getContext("2d");
+                            ctx.reset();
+
+                            var c = "#7C3AED"; // Purple color
+                            ctx.strokeStyle = c;
+                            ctx.fillStyle = c;
+                            ctx.lineWidth = 1.8;
+                            ctx.lineCap = "round";
+                            ctx.lineJoin = "round";
+
+                            var w = width;
+                            var h = height;
+                            var cx = w / 2;
+                            var cy = h / 2;
+
+                            // Center brain circle
+                            ctx.beginPath();
+                            ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+                            ctx.fill();
+
+                            // Neural connection nodes (outer circles)
+                            var nodes = [
+                                {x: cx, y: 3},           // top
+                                {x: w - 3, y: cy},       // right
+                                {x: cx, y: h - 3},       // bottom
+                                {x: 3, y: cy},           // left
+                                {x: w - 6, y: 6},        // top-right
+                                {x: w - 6, y: h - 6},    // bottom-right
+                                {x: 6, y: h - 6},        // bottom-left
+                                {x: 6, y: 6}             // top-left
+                            ];
+
+                            // Draw connection lines
+                            ctx.beginPath();
+                            for (var i = 0; i < nodes.length; i++) {
+                                ctx.moveTo(cx, cy);
+                                ctx.lineTo(nodes[i].x, nodes[i].y);
+                            }
+                            ctx.stroke();
+
+                            // Draw outer nodes
+                            for (var j = 0; j < nodes.length; j++) {
+                                ctx.beginPath();
+                                ctx.arc(nodes[j].x, nodes[j].y, 2.5, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+
+                            // Pulse rings around center
+                            ctx.strokeStyle = c;
+                            ctx.lineWidth = 1;
+                            ctx.globalAlpha = 0.3;
+                            ctx.beginPath();
+                            ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            // Text content
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 4
+
+                RowLayout {
+                    spacing: Theme.spacingSmall
+
+                    Label {
+                        text: qsTr("AI Assistant")
+                        font.pixelSize: 18
+                        font.weight: Font.Bold
+                        color: "#FFFFFF"
+                    }
+
+                    // NEW badge
+                    Rectangle {
+                        width: newText.width + 12
+                        height: 20
+                        radius: 10
+                        color: "#FBBF24"
+
+                        Text {
+                            id: newText
+                            anchors.centerIn: parent
+                            text: "NEW"
+                            font.pixelSize: 10
+                            font.weight: Font.Bold
+                            color: "#7C3AED"
+                        }
+                    }
+                }
+
+                Label {
+                    text: qsTr("Summarize PDFs & ask questions with AI")
+                    font.pixelSize: Theme.fontSizeCaption
+                    color: "#FFFFFF"
+                    opacity: 0.9
+                }
+            }
+
+            // Arrow
+            Rectangle {
+                Layout.preferredWidth: 36
+                Layout.preferredHeight: 36
+                radius: 18
+                color: aiCard.isHovered ? "#FFFFFF" : "transparent"
+                border.width: 2
+                border.color: "#FFFFFF"
+                opacity: aiCard.isHovered ? 1 : 0.7
+
+                Behavior on color {
+                    ColorAnimation { duration: 150 }
+                }
+
+                Behavior on opacity {
+                    NumberAnimation { duration: 150 }
+                }
+
+                Text {
+                    anchors.centerIn: parent
+                    text: "→"
+                    font.pixelSize: 18
+                    font.weight: Font.Bold
+                    color: aiCard.isHovered ? "#7C3AED" : "#FFFFFF"
+
+                    Behavior on color {
+                        ColorAnimation { duration: 150 }
+                    }
+                }
+            }
+        }
+
+        MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+
+            onEntered: {
+                aiCard.isHovered = true
+                aiCard.scale = 1.02
+            }
+
+            onExited: {
+                aiCard.isHovered = false
+                aiCard.scale = 1.0
+            }
+
+            onClicked: aiCard.clicked()
+            onPressed: aiCard.scale = 0.98
+            onReleased: aiCard.scale = aiCard.isHovered ? 1.02 : 1.0
         }
     }
 }

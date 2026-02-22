@@ -36,12 +36,23 @@ static void onAuthErrorCallback(JNIEnv *env, jobject /*thiz*/, jstring jErrorMes
     }, Qt::QueuedConnection);
 }
 
+static void onIdTokenCallback(JNIEnv *env, jobject /*thiz*/, jstring jIdToken)
+{
+    QString idToken = QJniObject(jIdToken).toString();
+    qDebug() << "AuthManager: ID token received, length:" << idToken.length();
+
+    QMetaObject::invokeMethod(AuthManager::instance(), [=]() {
+        AuthManager::instance()->handleIdToken(idToken);
+    }, Qt::QueuedConnection);
+}
+
 // Register native methods with Java
 static bool registerNativeMethods()
 {
     JNINativeMethod methods[] = {
         {"onAuthSuccess", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", reinterpret_cast<void *>(onAuthSuccessCallback)},
-        {"onAuthError", "(Ljava/lang/String;)V", reinterpret_cast<void *>(onAuthErrorCallback)}
+        {"onAuthError", "(Ljava/lang/String;)V", reinterpret_cast<void *>(onAuthErrorCallback)},
+        {"onIdToken", "(Ljava/lang/String;)V", reinterpret_cast<void *>(onIdTokenCallback)}
     };
 
     QJniEnvironment env;
@@ -64,39 +75,36 @@ static bool registerNativeMethods()
 AuthManager::AuthManager(QObject *parent)
     : QObject(parent)
     , m_isAuthenticated(false)
+    , m_userId("")
     , m_userName("")
     , m_userEmail("")
     , m_userPhotoUrl("")
+    , m_idToken("")
 {
-#ifdef Q_OS_ANDROID
-    // Register JNI callbacks
-    registerNativeMethods();
-
-    // Initialize Firebase Auth Helper
-    QJniObject activity = QJniObject::callStaticObjectMethod(
-        "org/qtproject/qt/android/QtNative",
-        "activity",
-        "()Landroid/app/Activity;"
-    );
-
-    if (activity.isValid()) {
-        QJniObject::callStaticMethod<void>(
-            "io/smartpdf/app/FBAuth",
-            "initialize",
-            "(Landroid/app/Activity;)V",
-            activity.object()
-        );
-        qDebug() << "AuthManager: Firebase initialized";
-    } else {
-        qWarning() << "AuthManager: Could not get activity for Firebase initialization";
-    }
-#endif
+    // JNI initialization moved to initializeNative() to avoid re-entrancy issues
 }
 
 AuthManager* AuthManager::instance()
 {
+    static bool s_initialized = false;
     if (!s_instance) {
         s_instance = new AuthManager();
+        // Initialize JNI AFTER s_instance is set to prevent re-entrancy loop
+        if (!s_initialized) {
+            s_initialized = true;
+#ifdef Q_OS_ANDROID
+            // Register JNI callbacks first
+            registerNativeMethods();
+
+            // Tell Java that native is now ready to receive callbacks
+            QJniObject::callStaticMethod<void>(
+                "io/smartpdf/app/FBAuth",
+                "setNativeReady",
+                "()V"
+            );
+            qDebug() << "AuthManager: Native ready signal sent";
+#endif
+        }
     }
     return s_instance;
 }
@@ -117,6 +125,11 @@ bool AuthManager::isAuthenticated() const
     return m_isAuthenticated;
 }
 
+QString AuthManager::userId() const
+{
+    return m_userId;
+}
+
 QString AuthManager::userName() const
 {
     return m_userName;
@@ -130,6 +143,33 @@ QString AuthManager::userEmail() const
 QString AuthManager::userPhotoUrl() const
 {
     return m_userPhotoUrl;
+}
+
+QString AuthManager::idToken() const
+{
+    return m_idToken;
+}
+
+void AuthManager::refreshIdToken()
+{
+    // Prevent duplicate refresh requests
+    if (m_tokenRefreshInProgress) {
+        return; // Silent skip - this is expected behavior
+    }
+    m_tokenRefreshInProgress = true;
+    qDebug() << "AuthManager: Requesting ID token refresh...";
+
+#ifdef Q_OS_ANDROID
+    QJniObject::callStaticMethod<void>(
+        "io/smartpdf/app/FBAuth",
+        "getIdToken",
+        "()V"
+    );
+
+#else
+    // Desktop fallback - emit dummy token
+    handleIdToken("desktop_test_token");
+#endif
 }
 
 void AuthManager::loginWithGoogle()
@@ -183,27 +223,41 @@ void AuthManager::signOut()
 #endif
 
     m_isAuthenticated = false;
+    m_userId = "";
     m_userName = "";
     m_userEmail = "";
     m_userPhotoUrl = "";
+    m_idToken = "";
 
     emit userChanged();
+    emit idTokenChanged();
     emit authSuccess("Signed out");
 }
 
 void AuthManager::handleAuthSuccess(const QString &userId, const QString &userName, const QString &userEmail, const QString &photoUrl)
 {
-    Q_UNUSED(userId)
     m_isAuthenticated = true;
+    m_userId = userId;
     m_userName = userName;
     m_userEmail = userEmail;
     m_userPhotoUrl = photoUrl;
 
     emit userChanged();
     emit authSuccess("Signed in as " + userName);
+
+    // Fetch ID token for API calls
+    refreshIdToken();
 }
 
 void AuthManager::handleAuthError(const QString &errorMessage)
 {
     emit authError(errorMessage);
+}
+
+void AuthManager::handleIdToken(const QString &token)
+{
+    qDebug() << "AuthManager: ID token received, length:" << token.length();
+    m_tokenRefreshInProgress = false;
+    m_idToken = token;
+    emit idTokenChanged();
 }

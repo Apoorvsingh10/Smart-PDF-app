@@ -5,12 +5,7 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Purple Background -->
-    <path
-        android:fillColor="#6B507C"
-        android:pathData="M0,0h108v108h-108z"/>
-
-    <!-- White Document with rounded corners -->
+    <!-- White Document with rounded corners - centered for adaptive icon safe zone -->
     <path
         android:fillColor="#FFFFFF"
         android:pathData="M30,24 L66,24 L78,36 L78,84 Q78,88 74,88 L34,88 Q30,88 30,84 Z"/>
@@ -19,6 +14,12 @@
     <path
         android:fillColor="#E8E0EB"
         android:pathData="M66,24 L66,36 L78,36 Z"/>
+
+    <!-- Document shadow/depth -->
+    <path
+        android:fillColor="#B3A5C1"
+        android:pathData="M30,84 L30,88 Q30,92 34,92 L74,92 Q78,92 78,88 L78,84 Q78,88 74,88 L34,88 Q30,88 30,84 Z"
+        android:fillAlpha="0.3"/>
 
     <!-- Red PDF Badge with rounded corners -->
     <path

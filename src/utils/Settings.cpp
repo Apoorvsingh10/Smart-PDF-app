@@ -74,3 +74,40 @@ void Settings::setCompressionLevel(int level)
     m_settings.setValue("compressionLevel", level);
     emit compressionLevelChanged();
 }
+
+// AI Settings
+QString Settings::aiApiKey() const
+{
+    return m_settings.value("ai/apiKey", "").toString();
+}
+
+void Settings::setAiApiKey(const QString &key)
+{
+    if (aiApiKey() == key) return;
+    m_settings.setValue("ai/apiKey", key);
+    emit aiApiKeyChanged();
+}
+
+int Settings::aiUsageCount() const
+{
+    return m_settings.value("ai/usageCount", 0).toInt();
+}
+
+void Settings::setAiUsageCount(int count)
+{
+    if (aiUsageCount() == count) return;
+    m_settings.setValue("ai/usageCount", count);
+    emit aiUsageCountChanged();
+}
+
+bool Settings::aiPurchased() const
+{
+    return m_settings.value("ai/purchased", false).toBool();
+}
+
+void Settings::setAiPurchased(bool purchased)
+{
+    if (aiPurchased() == purchased) return;
+    m_settings.setValue("ai/purchased", purchased);
+    emit aiPurchasedChanged();
+}

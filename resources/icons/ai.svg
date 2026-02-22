@@ -1,0 +1,28 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- Unique Neural Network / Brain Circuit Icon -->
+<!-- Center node -->
+<circle cx="12" cy="12" r="3" fill="#7C3AED"/>
+
+<!-- Connection lines from center to outer nodes -->
+<line x1="12" y1="12" x2="12" y2="3" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="12" y1="12" x2="21" y2="12" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="12" y1="12" x2="12" y2="21" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="12" y1="12" x2="3" y2="12" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="12" y1="12" x2="19" y2="5" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="12" y1="12" x2="19" y2="19" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="12" y1="12" x2="5" y2="19" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
+<line x1="12" y1="12" x2="5" y2="5" stroke="#7C3AED" stroke-width="1.5" stroke-linecap="round"/>
+
+<!-- Outer nodes (neural endpoints) -->
+<circle cx="12" cy="3" r="2" fill="#7C3AED"/>
+<circle cx="21" cy="12" r="2" fill="#7C3AED"/>
+<circle cx="12" cy="21" r="2" fill="#7C3AED"/>
+<circle cx="3" cy="12" r="2" fill="#7C3AED"/>
+<circle cx="19" cy="5" r="1.5" fill="#7C3AED"/>
+<circle cx="19" cy="19" r="1.5" fill="#7C3AED"/>
+<circle cx="5" cy="19" r="1.5" fill="#7C3AED"/>
+<circle cx="5" cy="5" r="1.5" fill="#7C3AED"/>
+
+<!-- Outer ring (subtle) -->
+<circle cx="12" cy="12" r="9" stroke="#7C3AED" stroke-width="1" stroke-opacity="0.3" fill="none"/>
+</svg>
