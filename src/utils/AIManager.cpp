@@ -6,6 +6,9 @@
 #include <QJsonArray>
 #include <QDebug>
 #include <QSslSocket>
+#include <QUrlQuery>
+#include <QFile>
+#include <QCoreApplication>
 
 AIManager* AIManager::s_instance = nullptr;
 
@@ -160,13 +163,43 @@ void AIManager::askQuestion(const QString &question)
     }
 }
 
-// API key from build-time environment variable
+// API key from build-time definition, config file, or settings
 static QString getApiKey() {
-#ifdef CLAUDE_API_KEY
-    return QStringLiteral(CLAUDE_API_KEY);
+#ifdef GEMINI_API_KEY
+    qDebug() << "AIManager: Using API key from build (length:" << QString(GEMINI_API_KEY).length() << ")";
+    return QStringLiteral(GEMINI_API_KEY);
 #else
+    // Try to read from config file (api_key.txt in app directory)
+    // This file should NOT be committed to git - add to .gitignore
+    QFile keyFile(QCoreApplication::applicationDirPath() + "/api_key.txt");
+    if (keyFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString key = QString::fromUtf8(keyFile.readAll()).trimmed();
+        keyFile.close();
+        if (!key.isEmpty()) {
+            qDebug() << "AIManager: Using API key from config file (length:" << key.length() << ")";
+            return key;
+        }
+    }
+
+    // Try assets location for Android
+    QFile assetKeyFile("assets:/api_key.txt");
+    if (assetKeyFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString key = QString::fromUtf8(assetKeyFile.readAll()).trimmed();
+        assetKeyFile.close();
+        if (!key.isEmpty()) {
+            qDebug() << "AIManager: Using API key from assets (length:" << key.length() << ")";
+            return key;
+        }
+    }
+
     // Fallback to settings
-    return Settings::instance()->property("aiApiKey").toString();
+    QString key = Settings::instance()->aiApiKey();
+    if (key.isEmpty()) {
+        qDebug() << "AIManager: API key NOT SET";
+    } else {
+        qDebug() << "AIManager: Using API key from Settings (length:" << key.length() << ")";
+    }
+    return key;
 #endif
 }
 
@@ -193,29 +226,48 @@ void AIManager::sendTextRequest(const QString &systemPrompt, const QString &user
     m_isLoading = true;
     emit loadingChanged();
 
-    QUrl url("https://api.anthropic.com/v1/messages");
+    // Gemini API endpoint with API key as query parameter
+    QUrl url("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent");
+    QUrlQuery query;
+    query.addQueryItem("key", apiKey);
+    url.setQuery(query);
+
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    request.setRawHeader("x-api-key", apiKey.toUtf8());
-    request.setRawHeader("anthropic-version", "2023-06-01");
 
+    // Build Gemini API request format
     QJsonObject json;
-    json["model"] = "claude-sonnet-4-5-20250514";
-    json["max_tokens"] = 1024;
-    json["system"] = systemPrompt;
 
-    QJsonArray messages;
-    QJsonObject userMsg;
-    userMsg["role"] = "user";
-    userMsg["content"] = userMessage;
-    messages.append(userMsg);
+    // System instruction
+    QJsonObject systemInstruction;
+    QJsonArray systemParts;
+    QJsonObject systemTextPart;
+    systemTextPart["text"] = systemPrompt;
+    systemParts.append(systemTextPart);
+    systemInstruction["parts"] = systemParts;
+    json["systemInstruction"] = systemInstruction;
 
-    json["messages"] = messages;
+    // User content
+    QJsonArray contents;
+    QJsonObject userContent;
+    QJsonArray userParts;
+    QJsonObject userTextPart;
+    userTextPart["text"] = userMessage;
+    userParts.append(userTextPart);
+    userContent["parts"] = userParts;
+    contents.append(userContent);
+    json["contents"] = contents;
+
+    // Generation config
+    QJsonObject generationConfig;
+    generationConfig["maxOutputTokens"] = 2048;
+    generationConfig["temperature"] = 0.7;
+    json["generationConfig"] = generationConfig;
 
     QJsonDocument doc(json);
     QByteArray data = doc.toJson();
 
-    qDebug() << "AIManager: Sending request to Claude API...";
+    qDebug() << "AIManager: Sending request to Gemini API...";
 
     m_currentReply = m_networkManager->post(request, data);
 
@@ -242,61 +294,69 @@ void AIManager::sendImageRequest(const QString &systemPrompt, const QString &use
     m_isLoading = true;
     emit loadingChanged();
 
-    QUrl url("https://api.anthropic.com/v1/messages");
+    // Gemini API endpoint with API key as query parameter
+    QUrl url("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent");
+    QUrlQuery query;
+    query.addQueryItem("key", apiKey);
+    url.setQuery(query);
+
     QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    request.setRawHeader("x-api-key", apiKey.toUtf8());
-    request.setRawHeader("anthropic-version", "2023-06-01");
 
     QJsonObject json;
-    json["model"] = "claude-sonnet-4-5-20250514";
-    json["max_tokens"] = 1024;
-    json["system"] = systemPrompt;
 
-    // Build content array with images and text
-    QJsonArray contentArray;
+    // System instruction
+    QJsonObject systemInstruction;
+    QJsonArray systemParts;
+    QJsonObject systemTextPart;
+    systemTextPart["text"] = systemPrompt;
+    systemParts.append(systemTextPart);
+    systemInstruction["parts"] = systemParts;
+    json["systemInstruction"] = systemInstruction;
+
+    // Build parts array with images and text
+    QJsonArray partsArray;
 
     // Add images (up to MAX_IMAGE_PAGES)
     int pageCount = qMin(static_cast<int>(m_currentPageImages.size()), static_cast<int>(MAX_IMAGE_PAGES));
     for (int i = 0; i < pageCount; ++i) {
-        QJsonObject imageBlock;
-        imageBlock["type"] = "image";
-
-        QJsonObject source;
-        source["type"] = "base64";
-        source["media_type"] = "image/png";
-        source["data"] = m_currentPageImages[i];
-        imageBlock["source"] = source;
-
-        contentArray.append(imageBlock);
+        QJsonObject imagePart;
+        QJsonObject inlineData;
+        inlineData["mimeType"] = "image/png";
+        inlineData["data"] = m_currentPageImages[i];
+        imagePart["inlineData"] = inlineData;
+        partsArray.append(imagePart);
     }
 
     if (m_currentPageImages.size() > static_cast<int>(MAX_IMAGE_PAGES)) {
-        QJsonObject textBlock;
-        textBlock["type"] = "text";
-        textBlock["text"] = QString("[Note: Only showing first %1 pages of %2 total pages]")
+        QJsonObject textPart;
+        textPart["text"] = QString("[Note: Only showing first %1 pages of %2 total pages]")
                                 .arg(MAX_IMAGE_PAGES).arg(m_currentPageImages.size());
-        contentArray.append(textBlock);
+        partsArray.append(textPart);
     }
 
     // Add user's question/request
-    QJsonObject textBlock;
-    textBlock["type"] = "text";
-    textBlock["text"] = userMessage;
-    contentArray.append(textBlock);
+    QJsonObject textPart;
+    textPart["text"] = userMessage;
+    partsArray.append(textPart);
 
-    QJsonArray messages;
-    QJsonObject userMsg;
-    userMsg["role"] = "user";
-    userMsg["content"] = contentArray;
-    messages.append(userMsg);
+    // User content
+    QJsonArray contents;
+    QJsonObject userContent;
+    userContent["parts"] = partsArray;
+    contents.append(userContent);
+    json["contents"] = contents;
 
-    json["messages"] = messages;
+    // Generation config
+    QJsonObject generationConfig;
+    generationConfig["maxOutputTokens"] = 2048;
+    generationConfig["temperature"] = 0.7;
+    json["generationConfig"] = generationConfig;
 
     QJsonDocument doc(json);
     QByteArray data = doc.toJson();
 
-    qDebug() << "AIManager: Sending image request to Claude API with" << pageCount << "pages...";
+    qDebug() << "AIManager: Sending image request to Gemini API with" << pageCount << "pages...";
 
     m_currentReply = m_networkManager->post(request, data);
 
@@ -348,24 +408,35 @@ void AIManager::handleResponse(QNetworkReply *reply)
 
     QJsonObject root = doc.object();
 
-    // Claude API response format
-    QJsonArray content = root["content"].toArray();
+    // Gemini API response format: candidates[0].content.parts[0].text
+    QJsonArray candidates = root["candidates"].toArray();
 
-    if (content.isEmpty()) {
-        qDebug() << "AIManager: No content in response";
-        emit errorOccurred(tr("No response generated."));
+    if (candidates.isEmpty()) {
+        // Check if blocked by safety filters
+        QJsonObject promptFeedback = root["promptFeedback"].toObject();
+        if (promptFeedback.contains("blockReason")) {
+            QString blockReason = promptFeedback["blockReason"].toString();
+            qDebug() << "AIManager: Request blocked:" << blockReason;
+            emit errorOccurred(tr("Request blocked by safety filters: ") + blockReason);
+        } else {
+            qDebug() << "AIManager: No candidates in response";
+            emit errorOccurred(tr("No response generated."));
+        }
         reply->deleteLater();
         m_currentReply = nullptr;
         return;
     }
 
-    // Extract text from first text block
+    // Extract text from first candidate
     QString responseText;
-    for (const QJsonValue &block : content) {
-        QJsonObject blockObj = block.toObject();
-        if (blockObj["type"].toString() == "text") {
-            responseText = blockObj["text"].toString();
-            break;
+    QJsonObject firstCandidate = candidates[0].toObject();
+    QJsonObject content = firstCandidate["content"].toObject();
+    QJsonArray parts = content["parts"].toArray();
+
+    for (const QJsonValue &part : parts) {
+        QJsonObject partObj = part.toObject();
+        if (partObj.contains("text")) {
+            responseText += partObj["text"].toString();
         }
     }
 

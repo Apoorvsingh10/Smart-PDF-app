@@ -108,14 +108,26 @@ qt_add_qml_module(appPDF_ToolKit
     RESOURCE_PREFIX "/"
 )
 
-# Claude API key from environment variable (keeps it out of source control)
-if(DEFINED ENV{CLAUDE_API_KEY})
+# Gemini API key configuration (keeps it out of source control)
+# Option 1: From api_key.cmake file (recommended - add to .gitignore)
+if(EXISTS "${CMAKE_SOURCE_DIR}/api_key.cmake")
+    include("${CMAKE_SOURCE_DIR}/api_key.cmake")
+    if(GEMINI_API_KEY AND NOT GEMINI_API_KEY STREQUAL "YOUR_API_KEY_HERE")
+        target_compile_definitions(appPDF_ToolKit PRIVATE
+            GEMINI_API_KEY="${GEMINI_API_KEY}"
+        )
+        message(STATUS "Gemini API key configured from api_key.cmake")
+    else()
+        message(WARNING "api_key.cmake found but GEMINI_API_KEY not set properly")
+    endif()
+# Option 2: From environment variable
+elseif(DEFINED ENV{GEMINI_API_KEY})
     target_compile_definitions(appPDF_ToolKit PRIVATE
-        CLAUDE_API_KEY="$ENV{CLAUDE_API_KEY}"
+        GEMINI_API_KEY="$ENV{GEMINI_API_KEY}"
     )
-    message(STATUS "Claude API key configured from environment variable")
+    message(STATUS "Gemini API key configured from environment variable")
 else()
-    message(WARNING "CLAUDE_API_KEY environment variable not set - AI features will require manual key entry")
+    message(WARNING "GEMINI_API_KEY not set - create api_key.cmake or set environment variable")
 endif()
 
 target_link_libraries(appPDF_ToolKit PRIVATE
