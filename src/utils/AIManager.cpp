@@ -260,7 +260,7 @@ void AIManager::sendTextRequest(const QString &systemPrompt, const QString &user
 
     // Generation config
     QJsonObject generationConfig;
-    generationConfig["maxOutputTokens"] = 2048;
+    generationConfig["maxOutputTokens"] = 8192;
     generationConfig["temperature"] = 0.7;
     json["generationConfig"] = generationConfig;
 
@@ -349,7 +349,7 @@ void AIManager::sendImageRequest(const QString &systemPrompt, const QString &use
 
     // Generation config
     QJsonObject generationConfig;
-    generationConfig["maxOutputTokens"] = 2048;
+    generationConfig["maxOutputTokens"] = 8192;
     generationConfig["temperature"] = 0.7;
     json["generationConfig"] = generationConfig;
 

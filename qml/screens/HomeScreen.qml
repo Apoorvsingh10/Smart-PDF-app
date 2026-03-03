@@ -1109,6 +1109,7 @@ Page {
 
         implicitHeight: 100
         radius: 16
+        clip: true
 
         property bool isHovered: false
 

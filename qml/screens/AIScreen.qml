@@ -10,6 +10,7 @@ Page {
     property url pdfPath
     property string pdfFileName: ""
     property string pdfText: ""
+    property bool isResponseMaximized: false
 
     signal back()
     signal showToast(string message, string type)
@@ -292,9 +293,59 @@ Page {
             border.width: 1
             border.color: Theme.outlineVariant
 
+            // Response Header with Maximize button
+            Rectangle {
+                id: responseHeader
+                anchors.top: parent.top
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 40
+                color: "transparent"
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: Theme.spacingMedium
+                    anchors.rightMargin: Theme.spacingSmall
+
+                    Label {
+                        text: qsTr("Response")
+                        font.pixelSize: Theme.fontSizeCaption
+                        font.weight: Font.DemiBold
+                        color: Theme.surfaceVariantForeground
+                        Layout.fillWidth: true
+                    }
+
+                    // Maximize button
+                    ToolButton {
+                        visible: AIManager.currentResponse.length > 0
+                        icon.source: "qrc:/PDF_ToolKit/resources/icons/fullscreen.svg"
+                        icon.width: 20
+                        icon.height: 20
+                        onClicked: root.isResponseMaximized = true
+
+                        ToolTip.visible: hovered
+                        ToolTip.text: qsTr("Expand")
+                    }
+                }
+
+                // Separator line
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: Theme.spacingMedium
+                    anchors.rightMargin: Theme.spacingMedium
+                    height: 1
+                    color: Theme.outlineVariant
+                    opacity: 0.5
+                    visible: AIManager.currentResponse.length > 0
+                }
+            }
+
             ScrollView {
                 id: responseScrollView
                 anchors.fill: parent
+                anchors.topMargin: responseHeader.height
                 anchors.margins: Theme.spacingMedium
                 clip: true
                 contentWidth: availableWidth
@@ -359,6 +410,152 @@ Page {
             text: qsTr("Clear Response")
             flat: true
             onClicked: AIManager.clearResponse()
+        }
+    }
+
+    // Fullscreen Response Overlay
+    Rectangle {
+        id: fullscreenOverlay
+        anchors.fill: parent
+        color: Theme.background
+        visible: root.isResponseMaximized
+        z: 100
+
+        // Header
+        Rectangle {
+            id: fullscreenHeader
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: Theme.appBarHeight
+            color: Theme.surfaceContainer
+
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: Theme.outlineVariant
+                opacity: 0.3
+            }
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.spacingSmall
+                anchors.rightMargin: Theme.spacingMedium
+
+                ToolButton {
+                    icon.source: "qrc:/PDF_ToolKit/resources/icons/back.svg"
+                    icon.width: Theme.iconSizeMedium
+                    icon.height: Theme.iconSizeMedium
+                    onClicked: root.isResponseMaximized = false
+                }
+
+                Label {
+                    text: qsTr("AI Response")
+                    font.pixelSize: Theme.fontSizeTitle
+                    font.weight: Font.DemiBold
+                    color: Theme.surfaceForeground
+                    Layout.fillWidth: true
+                }
+
+                // Copy button
+                ToolButton {
+                    icon.source: "qrc:/PDF_ToolKit/resources/icons/copy.svg"
+                    icon.width: 20
+                    icon.height: 20
+                    onClicked: {
+                        fullscreenResponseText.selectAll()
+                        fullscreenResponseText.copy()
+                        fullscreenResponseText.deselect()
+                        root.showToast(qsTr("Copied to clipboard"), "success")
+                    }
+
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Copy")
+                }
+
+                // Minimize button
+                ToolButton {
+                    icon.source: "qrc:/PDF_ToolKit/resources/icons/fullscreen_exit.svg"
+                    icon.width: 20
+                    icon.height: 20
+                    onClicked: root.isResponseMaximized = false
+
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("Minimize")
+                }
+            }
+        }
+
+        // PDF info bar
+        Rectangle {
+            id: pdfInfoBar
+            anchors.top: fullscreenHeader.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 44
+            color: Theme.surfaceContainer
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.spacingMedium
+                anchors.rightMargin: Theme.spacingMedium
+                spacing: Theme.spacingSmall
+
+                Image {
+                    source: "qrc:/PDF_ToolKit/resources/icons/pdf.svg"
+                    sourceSize.width: 20
+                    sourceSize.height: 20
+                }
+
+                Label {
+                    text: pdfFileName || qsTr("PDF Document")
+                    font.pixelSize: Theme.fontSizeCaption
+                    color: Theme.surfaceVariantForeground
+                    elide: Text.ElideMiddle
+                    Layout.fillWidth: true
+                }
+            }
+
+            Rectangle {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: 1
+                color: Theme.outlineVariant
+                opacity: 0.3
+            }
+        }
+
+        // Fullscreen content
+        ScrollView {
+            id: fullscreenScrollView
+            anchors.top: pdfInfoBar.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.margins: Theme.spacingMedium
+            clip: true
+            contentWidth: availableWidth
+
+            TextArea {
+                id: fullscreenResponseText
+                width: fullscreenScrollView.availableWidth
+                text: AIManager.currentResponse
+                font.pixelSize: Theme.fontSizeBody + 2
+                color: Theme.surfaceForeground
+                wrapMode: Text.WordWrap
+                textFormat: Text.MarkdownText
+                readOnly: true
+                selectByMouse: true
+                background: Item {}
+                padding: 0
+                leftPadding: 0
+                rightPadding: 0
+                topPadding: 0
+                bottomPadding: Theme.spacingXLarge
+            }
         }
     }
 
