@@ -75,7 +75,7 @@ private:
     bool m_waitingForToken = false;
 
     // Plan limits
-    static const int FREE_TRIAL_LIMIT = 2;
+    static const int FREE_TRIAL_LIMIT = 999;  // TODO: Change back to 2 for production
     static const int PAID_MONTHLY_LIMIT = 15;
 };
 
