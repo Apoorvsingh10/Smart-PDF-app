@@ -293,17 +293,28 @@ Page {
             border.color: Theme.outlineVariant
 
             ScrollView {
+                id: responseScrollView
                 anchors.fill: parent
                 anchors.margins: Theme.spacingMedium
                 clip: true
+                contentWidth: availableWidth
 
-                Label {
-                    width: parent.width
+                TextArea {
+                    id: responseText
+                    width: responseScrollView.availableWidth
                     text: AIManager.currentResponse || qsTr("AI responses will appear here.\n\nTap 'Summarize PDF' for a quick overview, or ask a specific question about the document.")
                     font.pixelSize: Theme.fontSizeBody
                     color: AIManager.currentResponse ? Theme.surfaceForeground : Theme.surfaceVariantForeground
                     wrapMode: Text.WordWrap
-                    textFormat: Text.PlainText
+                    textFormat: Text.MarkdownText
+                    readOnly: true
+                    selectByMouse: true
+                    background: Item {}
+                    padding: 0
+                    leftPadding: 0
+                    rightPadding: 0
+                    topPadding: 0
+                    bottomPadding: 0
                 }
             }
 

@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.Material
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import PDF_ToolKit 1.0
 
 Page {
@@ -146,87 +147,75 @@ Page {
                     // Profile Avatar
                     Rectangle {
                         id: profileButton
-                        width: 40
-                        height: 40
-                        radius: 20
-                        color: profileMouseArea.containsMouse ? "#FFFFFF40" : "#FFFFFF20"
-                        border.width: 2
+                        width: 44
+                        height: 44
+                        radius: 22
+                        // Only show background when no photo
+                        color: AuthManager.userPhotoUrl !== "" ? "transparent" : (profileMouseArea.containsMouse ? "#FFFFFF40" : "#FFFFFF20")
+                        border.width: AuthManager.userPhotoUrl !== "" ? 0 : 2
                         border.color: "#FFFFFF60"
 
-                    Behavior on color {
-                        ColorAnimation { duration: Theme.animationFast }
-                    }
+                        Behavior on color {
+                            ColorAnimation { duration: Theme.animationFast }
+                        }
 
-                    // Profile image with circular clipping
-                    Item {
-                        id: profileImageContainer
-                        anchors.centerIn: parent
-                        width: 32
-                        height: 32
-                        visible: AuthManager.userPhotoUrl !== ""
+                        // Profile image (hidden, used as source for mask)
+                        Image {
+                            id: profileImage
+                            anchors.fill: parent
+                            source: AuthManager.userPhotoUrl || ""
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            cache: true
+                            visible: false
+                        }
 
+                        // Circular mask
                         Rectangle {
-                            id: profileImageMask
+                            id: profileMask
                             anchors.fill: parent
                             radius: width / 2
                             color: "white"
                             visible: false
                         }
 
-                        Image {
-                            id: profileImage
+                        // Masked circular profile image
+                        OpacityMask {
                             anchors.fill: parent
-                            source: AuthManager.userPhotoUrl ? AuthManager.userPhotoUrl : ""
-                            fillMode: Image.PreserveAspectCrop
-                            visible: false
-                            asynchronous: true
-                            cache: true
+                            source: profileImage
+                            maskSource: profileMask
+                            visible: AuthManager.userPhotoUrl !== ""
                         }
 
-                        // Use ShaderEffectSource and OpacityMask alternative
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: width / 2
-                            clip: true
-
-                            Image {
-                                anchors.fill: parent
-                                source: AuthManager.userPhotoUrl ? AuthManager.userPhotoUrl : ""
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                                cache: true
-                            }
-                        }
-
-                        // Border overlay
+                        // White border overlay for profile image
                         Rectangle {
                             anchors.fill: parent
                             radius: width / 2
                             color: "transparent"
-                            border.width: 1
-                            border.color: "#FFFFFF40"
+                            border.width: 2
+                            border.color: "#FFFFFFAA"
+                            visible: AuthManager.userPhotoUrl !== ""
+                        }
+
+                        // Fallback: Default avatar icon (only when no photo)
+                        Image {
+                            anchors.centerIn: parent
+                            width: 24
+                            height: 24
+                            visible: AuthManager.userPhotoUrl === ""
+                            source: "qrc:/PDF_ToolKit/resources/icons/default_user.svg"
+                            sourceSize.width: 24
+                            sourceSize.height: 24
+                        }
+
+                        MouseArea {
+                            id: profileMouseArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: profileMenu.open()
                         }
                     }
-
-                    // Fallback: Default avatar icon
-                    Image {
-                        anchors.centerIn: parent
-                        width: 24
-                        height: 24
-                        visible: !profileImage.visible
-                        source: "qrc:/PDF_ToolKit/resources/icons/default_user.svg"
-                        sourceSize.width: 24
-                        sourceSize.height: 24
-                    }
-
-                    MouseArea {
-                        id: profileMouseArea
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: profileMenu.open()
-                    }
-                }
                 } // End Row
 
                 // Profile Menu
@@ -267,24 +256,41 @@ Page {
                                 height: 44
                                 radius: 22
                                 color: Theme.primaryContainer
-                                clip: true
 
-                                // Circular clipped image
+                                // Profile image (hidden, source for mask)
                                 Image {
+                                    id: menuProfileImage
                                     anchors.fill: parent
-                                    source: AuthManager.userPhotoUrl ? AuthManager.userPhotoUrl : ""
-                                    visible: AuthManager.userPhotoUrl !== ""
+                                    source: AuthManager.userPhotoUrl || ""
                                     fillMode: Image.PreserveAspectCrop
                                     asynchronous: true
                                     cache: true
+                                    visible: false
                                 }
 
-                                // Fallback icon
+                                // Circular mask
+                                Rectangle {
+                                    id: menuProfileMask
+                                    anchors.fill: parent
+                                    radius: width / 2
+                                    color: "white"
+                                    visible: false
+                                }
+
+                                // Masked circular profile image
+                                OpacityMask {
+                                    anchors.fill: parent
+                                    source: menuProfileImage
+                                    maskSource: menuProfileMask
+                                    visible: AuthManager.userPhotoUrl !== ""
+                                }
+
+                                // Fallback icon (only when no photo)
                                 Image {
                                     anchors.centerIn: parent
                                     width: 28
                                     height: 28
-                                    visible: !AuthManager.userPhotoUrl
+                                    visible: AuthManager.userPhotoUrl === ""
                                     source: "qrc:/PDF_ToolKit/resources/icons/default_user_dark.svg"
                                     sourceSize.width: 28
                                     sourceSize.height: 28
