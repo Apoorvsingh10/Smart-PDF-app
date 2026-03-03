@@ -227,7 +227,7 @@ void AIManager::sendTextRequest(const QString &systemPrompt, const QString &user
     emit loadingChanged();
 
     // Gemini API endpoint with API key as query parameter
-    QUrl url("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent");
+    QUrl url("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent");
     QUrlQuery query;
     query.addQueryItem("key", apiKey);
     url.setQuery(query);
@@ -295,7 +295,7 @@ void AIManager::sendImageRequest(const QString &systemPrompt, const QString &use
     emit loadingChanged();
 
     // Gemini API endpoint with API key as query parameter
-    QUrl url("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent");
+    QUrl url("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent");
     QUrlQuery query;
     query.addQueryItem("key", apiKey);
     url.setQuery(query);
