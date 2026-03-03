@@ -105,6 +105,9 @@ qt_add_qml_module(appPDF_ToolKit
         resources/icons/arrow_down.svg
         resources/icons/logout.svg
         resources/icons/ai.svg
+        resources/icons/fullscreen.svg
+        resources/icons/fullscreen_exit.svg
+        resources/icons/copy.svg
     RESOURCE_PREFIX "/"
 )
 
