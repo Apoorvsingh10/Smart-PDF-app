@@ -2,6 +2,7 @@
 #define PAYMENTMANAGER_H
 
 #include <QObject>
+#include <QMap>
 #include <QtQml>
 
 class PaymentManager : public QObject
@@ -24,32 +25,32 @@ public:
     Q_INVOKABLE QString getPlanPrice(const QString &planId) const;
     Q_INVOKABLE QString getPlanLabel(const QString &planId) const;
 
+    // Google Play Billing helpers
+    QString getGooglePlayProductId(const QString &planId) const;
+    void updateProductPrice(const QString &productId, const QString &price);
+
 signals:
     void processingChanged();
     void currentPlanChanged();
     void paymentSuccess(const QString &paymentId, const QString &orderId, const QString &plan);
     void paymentFailed(const QString &errorCode, const QString &errorDesc);
     void purchaseComplete();
+    void pricesUpdated();
+    void purchasePending();
 
 public slots:
-    void handlePaymentSuccess(const QString &paymentId, const QString &orderId);
+    void handlePaymentSuccess(const QString &purchaseToken, const QString &orderId);
     void handlePaymentFailed(const QString &errorCode, const QString &errorDesc);
 
 private:
     explicit PaymentManager(QObject *parent = nullptr);
     static PaymentManager *s_instance;
 
-    int getPlanAmountPaise(const QString &planId) const;
-    QString generateOrderId() const;
-
     bool m_isProcessing;
     QString m_currentPlan;
-    QString m_currentOrderId;
 
-    // Plan prices in paise (for INR)
-    static const int MONTHLY_PRICE = 10000;     // ₹100
-    static const int QUARTERLY_PRICE = 25000;   // ₹250
-    static const int LIFETIME_PRICE = 100000;   // ₹1,000
+    // Cached prices from Google Play
+    QMap<QString, QString> m_productPrices;
 };
 
 #endif // PAYMENTMANAGER_H

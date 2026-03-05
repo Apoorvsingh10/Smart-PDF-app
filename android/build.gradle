@@ -34,8 +34,8 @@ dependencies {
     // Google Sign-In
     implementation 'com.google.android.gms:play-services-auth:20.7.0'
 
-    // Razorpay Payment SDK
-    implementation 'com.razorpay:checkout:1.6.40'
+    // Google Play Billing
+    implementation 'com.android.billingclient:billing:7.0.0'
 }
 
 // Fix Kotlin stdlib duplicate class conflicts
