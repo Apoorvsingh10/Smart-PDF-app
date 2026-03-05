@@ -14,28 +14,67 @@
 PaymentManager* PaymentManager::s_instance = nullptr;
 
 #ifdef Q_OS_ANDROID
-// JNI callback functions - called from Java
-static void onPaymentSuccessCallback(JNIEnv *env, jobject /*thiz*/, jstring jPaymentId, jstring jOrderId)
+// JNI callback functions - called from Java BillingHelper
+
+static void onBillingConnectedCallback(JNIEnv *env, jobject /*thiz*/)
 {
-    QString paymentId = QJniObject(jPaymentId).toString();
-    QString orderId = QJniObject(jOrderId).toString();
+    qDebug() << "PaymentManager: Google Play Billing connected";
+}
 
-    qDebug() << "PaymentManager: Payment success - paymentId:" << paymentId << "orderId:" << orderId;
+static void onBillingDisconnectedCallback(JNIEnv *env, jobject /*thiz*/)
+{
+    qDebug() << "PaymentManager: Google Play Billing disconnected";
+}
 
+static void onProductDetailsLoadedCallback(JNIEnv *env, jobject /*thiz*/,
+                                            jstring jProductId, jstring jPrice, jstring jTitle)
+{
+    QString productId = QJniObject(jProductId).toString();
+    QString price = QJniObject(jPrice).toString();
+    QString title = QJniObject(jTitle).toString();
+
+    qDebug() << "PaymentManager: Product loaded -" << productId << "price:" << price;
+
+    // Store price for later use (could emit signal to update UI)
     QMetaObject::invokeMethod(PaymentManager::instance(), [=]() {
-        PaymentManager::instance()->handlePaymentSuccess(paymentId, orderId);
+        PaymentManager::instance()->updateProductPrice(productId, price);
     }, Qt::QueuedConnection);
 }
 
-static void onPaymentFailedCallback(JNIEnv *env, jobject /*thiz*/, jstring jErrorCode, jstring jErrorDesc)
+static void onPurchaseSuccessCallback(JNIEnv *env, jobject /*thiz*/,
+                                       jstring jProductId, jstring jPurchaseToken, jstring jOrderId)
 {
-    QString errorCode = QJniObject(jErrorCode).toString();
-    QString errorDesc = QJniObject(jErrorDesc).toString();
+    QString productId = QJniObject(jProductId).toString();
+    QString purchaseToken = QJniObject(jPurchaseToken).toString();
+    QString orderId = QJniObject(jOrderId).toString();
 
-    qDebug() << "PaymentManager: Payment failed - code:" << errorCode << "desc:" << errorDesc;
+    qDebug() << "PaymentManager: Purchase success - productId:" << productId << "orderId:" << orderId;
 
     QMetaObject::invokeMethod(PaymentManager::instance(), [=]() {
-        PaymentManager::instance()->handlePaymentFailed(errorCode, errorDesc);
+        PaymentManager::instance()->handlePaymentSuccess(purchaseToken, orderId);
+    }, Qt::QueuedConnection);
+}
+
+static void onPurchaseFailedCallback(JNIEnv *env, jobject /*thiz*/,
+                                      jstring jErrorCode, jstring jErrorMessage)
+{
+    QString errorCode = QJniObject(jErrorCode).toString();
+    QString errorMessage = QJniObject(jErrorMessage).toString();
+
+    qDebug() << "PaymentManager: Purchase failed - code:" << errorCode << "msg:" << errorMessage;
+
+    QMetaObject::invokeMethod(PaymentManager::instance(), [=]() {
+        PaymentManager::instance()->handlePaymentFailed(errorCode, errorMessage);
+    }, Qt::QueuedConnection);
+}
+
+static void onPurchasePendingCallback(JNIEnv *env, jobject /*thiz*/, jstring jProductId)
+{
+    QString productId = QJniObject(jProductId).toString();
+    qDebug() << "PaymentManager: Purchase pending -" << productId;
+
+    QMetaObject::invokeMethod(PaymentManager::instance(), [=]() {
+        emit PaymentManager::instance()->purchasePending();
     }, Qt::QueuedConnection);
 }
 
@@ -43,14 +82,22 @@ static void onPaymentFailedCallback(JNIEnv *env, jobject /*thiz*/, jstring jErro
 static bool registerNativeMethods()
 {
     JNINativeMethod methods[] = {
-        {"onPaymentSuccess", "(Ljava/lang/String;Ljava/lang/String;)V", reinterpret_cast<void *>(onPaymentSuccessCallback)},
-        {"onPaymentFailed", "(Ljava/lang/String;Ljava/lang/String;)V", reinterpret_cast<void *>(onPaymentFailedCallback)}
+        {"onBillingConnected", "()V", reinterpret_cast<void *>(onBillingConnectedCallback)},
+        {"onBillingDisconnected", "()V", reinterpret_cast<void *>(onBillingDisconnectedCallback)},
+        {"onProductDetailsLoaded", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
+            reinterpret_cast<void *>(onProductDetailsLoadedCallback)},
+        {"onPurchaseSuccess", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
+            reinterpret_cast<void *>(onPurchaseSuccessCallback)},
+        {"onPurchaseFailed", "(Ljava/lang/String;Ljava/lang/String;)V",
+            reinterpret_cast<void *>(onPurchaseFailedCallback)},
+        {"onPurchasePending", "(Ljava/lang/String;)V",
+            reinterpret_cast<void *>(onPurchasePendingCallback)}
     };
 
     QJniEnvironment env;
-    jclass clazz = env.findClass("io/smartpdf/app/RazorpayHelper");
+    jclass clazz = env.findClass("io/smartpdf/app/BillingHelper");
     if (clazz == nullptr) {
-        qWarning() << "PaymentManager: Could not find RazorpayHelper class";
+        qWarning() << "PaymentManager: Could not find BillingHelper class";
         return false;
     }
 
@@ -95,19 +142,28 @@ PaymentManager* PaymentManager::create(QQmlEngine *qmlEngine, QJSEngine *jsEngin
 bool PaymentManager::isProcessing() const { return m_isProcessing; }
 QString PaymentManager::currentPlan() const { return m_currentPlan; }
 
-int PaymentManager::getPlanAmountPaise(const QString &planId) const
+QString PaymentManager::getGooglePlayProductId(const QString &planId) const
 {
-    if (planId == "monthly") return MONTHLY_PRICE;
-    if (planId == "quarterly") return QUARTERLY_PRICE;
-    if (planId == "lifetime") return LIFETIME_PRICE;
-    return 0;
+    // Map internal plan IDs to Google Play product IDs
+    if (planId == "monthly") return "smartpdf_monthly";
+    if (planId == "quarterly") return "smartpdf_quarterly";
+    if (planId == "lifetime") return "smartpdf_lifetime";
+    return "";
 }
 
 QString PaymentManager::getPlanPrice(const QString &planId) const
 {
-    int paise = getPlanAmountPaise(planId);
-    int rupees = paise / 100;
-    return QString::fromUtf8("₹") + QString::number(rupees);
+    // Return cached price from Google Play, or fallback
+    QString productId = getGooglePlayProductId(planId);
+    if (m_productPrices.contains(productId)) {
+        return m_productPrices[productId];
+    }
+
+    // Fallback prices (will be overwritten when Google Play responds)
+    if (planId == "monthly") return QString::fromUtf8("₹100");
+    if (planId == "quarterly") return QString::fromUtf8("₹250");
+    if (planId == "lifetime") return QString::fromUtf8("₹1,000");
+    return "";
 }
 
 QString PaymentManager::getPlanLabel(const QString &planId) const
@@ -118,11 +174,10 @@ QString PaymentManager::getPlanLabel(const QString &planId) const
     return planId;
 }
 
-QString PaymentManager::generateOrderId() const
+void PaymentManager::updateProductPrice(const QString &productId, const QString &price)
 {
-    // Generate a UUID-based order ID for MVP
-    // In production, this should come from your backend
-    return "order_" + QUuid::createUuid().toString(QUuid::Id128).left(16);
+    m_productPrices[productId] = price;
+    emit pricesUpdated();
 }
 
 void PaymentManager::startPayment(const QString &planId)
@@ -132,75 +187,39 @@ void PaymentManager::startPayment(const QString &planId)
         return;
     }
 
-    int amount = getPlanAmountPaise(planId);
-    if (amount == 0) {
+    QString productId = getGooglePlayProductId(planId);
+    if (productId.isEmpty()) {
         emit paymentFailed("INVALID_PLAN", "Invalid plan selected");
         return;
     }
 
     m_currentPlan = planId;
-    m_currentOrderId = generateOrderId();
     m_isProcessing = true;
     emit processingChanged();
     emit currentPlanChanged();
 
-    QString description = getPlanLabel(planId) + " - Smart PDF AI";
-    QString email = AuthManager::instance()->userEmail();
-    if (email.isEmpty()) {
-        email = "user@smartpdf.app";
-    }
+    qDebug() << "PaymentManager: Starting Google Play purchase for:" << productId;
 
 #ifdef Q_OS_ANDROID
-    QString razorpayKey = Settings::instance()->property("razorpayKeyId").toString();
-    if (razorpayKey.isEmpty()) {
-        qWarning() << "PaymentManager: Razorpay key not configured";
-        m_isProcessing = false;
-        emit processingChanged();
-        emit paymentFailed("CONFIG_ERROR", "Payment not configured");
-        return;
-    }
+    QJniObject jProductId = QJniObject::fromString(productId);
 
-    qDebug() << "PaymentManager: Starting Razorpay payment - amount:" << amount << "plan:" << planId;
-
-    QJniObject jOrderId = QJniObject::fromString(m_currentOrderId);
-    QJniObject jDescription = QJniObject::fromString(description);
-    QJniObject jEmail = QJniObject::fromString(email);
-    QJniObject jKey = QJniObject::fromString(razorpayKey);
-
-    QJniObject activity = QJniObject::callStaticObjectMethod(
-        "org/qtproject/qt/android/QtNative",
-        "activity",
-        "()Landroid/app/Activity;"
+    QJniObject::callStaticMethod<void>(
+        "io/smartpdf/app/BillingHelper",
+        "launchPurchase",
+        "(Ljava/lang/String;)V",
+        jProductId.object<jstring>()
     );
-
-    if (activity.isValid()) {
-        QJniObject::callStaticMethod<void>(
-            "io/smartpdf/app/RazorpayHelper",
-            "startPayment",
-            "(Landroid/app/Activity;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
-            activity.object(),
-            jKey.object<jstring>(),
-            amount,
-            jOrderId.object<jstring>(),
-            jDescription.object<jstring>(),
-            jEmail.object<jstring>()
-        );
-    } else {
-        qWarning() << "PaymentManager: Could not get activity";
-        m_isProcessing = false;
-        emit processingChanged();
-        emit paymentFailed("SYSTEM_ERROR", "Could not start payment");
-    }
 #else
     // Desktop fallback - simulate successful payment for testing
     qDebug() << "PaymentManager: Desktop mode - simulating payment success";
     QMetaObject::invokeMethod(this, [this]() {
-        handlePaymentSuccess("pay_test_" + QUuid::createUuid().toString(QUuid::Id128).left(16), m_currentOrderId);
+        handlePaymentSuccess("test_token_" + QUuid::createUuid().toString(QUuid::Id128).left(16),
+                             "test_order_" + QUuid::createUuid().toString(QUuid::Id128).left(16));
     }, Qt::QueuedConnection);
 #endif
 }
 
-void PaymentManager::handlePaymentSuccess(const QString &paymentId, const QString &orderId)
+void PaymentManager::handlePaymentSuccess(const QString &purchaseToken, const QString &orderId)
 {
     qDebug() << "PaymentManager: Processing successful payment";
 
@@ -208,9 +227,9 @@ void PaymentManager::handlePaymentSuccess(const QString &paymentId, const QStrin
     emit processingChanged();
 
     // Apply purchase to subscription
-    SubscriptionManager::instance()->applyPurchase(m_currentPlan, orderId, paymentId);
+    SubscriptionManager::instance()->applyPurchase(m_currentPlan, orderId, purchaseToken);
 
-    emit paymentSuccess(paymentId, orderId, m_currentPlan);
+    emit paymentSuccess(purchaseToken, orderId, m_currentPlan);
     emit purchaseComplete();
 }
 

@@ -20,6 +20,20 @@ Page {
         color: Theme.background
     }
 
+    // Clear response when leaving the screen
+    Component.onDestruction: {
+        AIManager.clearResponse()
+        AIManager.cancelRequest()
+    }
+
+    // Also clear when visibility changes (navigating away)
+    onVisibleChanged: {
+        if (!visible) {
+            AIManager.clearResponse()
+            AIManager.cancelRequest()
+        }
+    }
+
     // Handle AI responses
     Connections {
         target: AIManager

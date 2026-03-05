@@ -5,11 +5,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.razorpay.PaymentResultListener;
-
 import org.qtproject.qt.android.bindings.QtActivity;
 
-public class SmartPdfActivity extends QtActivity implements PaymentResultListener {
+public class SmartPdfActivity extends QtActivity {
     private static final String TAG = "SmartPdfActivity";
     private static SmartPdfActivity s_instance;
     private static String s_pendingFileUri = null;
@@ -24,17 +22,19 @@ public class SmartPdfActivity extends QtActivity implements PaymentResultListene
         s_instance = this;
         Log.d(TAG, "SmartPdfActivity created");
 
-        // Initialize helpers safely
+        // Initialize Firebase Auth
         try {
             FBAuth.initialize(this);
         } catch (Exception e) {
             Log.e(TAG, "FBAuth initialization failed: " + e.getMessage());
         }
 
+        // Initialize Google Play Billing
         try {
-            RazorpayHelper.initialize(this);
+            BillingHelper.getInstance(this);
+            Log.d(TAG, "BillingHelper initialized");
         } catch (Exception e) {
-            Log.e(TAG, "RazorpayHelper initialization failed: " + e.getMessage());
+            Log.e(TAG, "BillingHelper initialization failed: " + e.getMessage());
         }
 
         // Handle intent if app was opened with a PDF file
@@ -146,24 +146,13 @@ public class SmartPdfActivity extends QtActivity implements PaymentResultListene
         }
     }
 
-    // PaymentResultListener implementation for Razorpay
     @Override
-    public void onPaymentSuccess(String paymentId) {
-        Log.d(TAG, "Payment success received in Activity: " + paymentId);
-        try {
-            RazorpayHelper.onPaymentSuccess(paymentId, "");
-        } catch (Exception e) {
-            Log.e(TAG, "Error handling payment success: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public void onPaymentError(int code, String description) {
-        Log.e(TAG, "Payment error received in Activity - code: " + code + ", desc: " + description);
-        try {
-            RazorpayHelper.onPaymentFailed(String.valueOf(code), description != null ? description : "Payment failed");
-        } catch (Exception e) {
-            Log.e(TAG, "Error handling payment error: " + e.getMessage());
+    protected void onDestroy() {
+        super.onDestroy();
+        // Clean up billing
+        BillingHelper helper = BillingHelper.getInstance();
+        if (helper != null) {
+            helper.destroy();
         }
     }
 }
