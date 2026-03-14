@@ -51,19 +51,37 @@ ApplicationWindow {
         function onFileReceived(fileUri) {
             console.log("Main: File received from external app:", fileUri)
             if (AuthManager.isAuthenticated) {
-                // Open the file in viewer
-                mainViewModel.currentTabIndex = 1
-                stackView.push(viewerScreen, { "source": fileUri, "showBackButton": true })
+                // Open the file in viewer with delay to ensure UI is ready
+                Qt.callLater(function() {
+                    // Pop any existing screens first
+                    while (stackView.depth > 1) {
+                        stackView.pop()
+                    }
+                    // Switch to viewer tab and push viewer screen
+                    mainViewModel.currentTabIndex = 1
+                    stackView.push(viewerScreen, { "source": fileUri, "showBackButton": true })
+                    console.log("Main: Pushed viewer with source:", fileUri)
+                })
             } else {
                 // Store for later, after login
                 window.pendingFileToOpen = fileUri
+                console.log("Main: Stored pending file for after login:", fileUri)
             }
         }
     }
 
-    // Check for pending file on startup
+    // Check for pending file on startup (with delay to ensure activity is ready)
     Component.onCompleted: {
-        FileReceiver.checkPendingFile()
+        pendingFileTimer.start()
+    }
+
+    Timer {
+        id: pendingFileTimer
+        interval: 500  // Wait for activity to be fully ready
+        onTriggered: {
+            console.log("Main: Checking for pending file...")
+            FileReceiver.checkPendingFile()
+        }
     }
 
     // Handle PDF extraction completion

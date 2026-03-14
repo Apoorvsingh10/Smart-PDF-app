@@ -354,34 +354,27 @@ Page {
             }
         }
 
-        // PDF loaded state
+        // Loading state - show when source is set but PDF not ready
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: pdfDocument.isLoaded
+            visible: pdfDocument.source.toString() !== "" && pdfViewerDocument.status !== PdfDocument.Ready
 
-            PdfMultiPageView {
-                id: pdfView
-                anchors.fill: parent
-                document: pdfViewerDocument
-                visible: pdfDocument.isLoaded && pdfDocument.hasPdfViewer && pdfViewerDocument.status === PdfDocument.Ready
-                // Use default renderScale of 1.0 - users can pinch to zoom
-            }
-
-            // Loading indicator
             Rectangle {
                 anchors.fill: parent
                 color: Theme.background
-                visible: pdfDocument.isLoaded && pdfViewerDocument.status === PdfDocument.Loading
 
                 ColumnLayout {
                     anchors.centerIn: parent
                     spacing: Theme.spacingMedium
 
-                    BusyIndicator {
+                    AnimatedImage {
                         Layout.alignment: Qt.AlignHCenter
-                        running: pdfViewerDocument.status === PdfDocument.Loading
-                        Material.accent: Theme.primary
+                        source: "qrc:/PDF_ToolKit/resources/images/pixel_cat.gif"
+                        playing: true
+                        Layout.preferredWidth: 150
+                        Layout.preferredHeight: 52
+                        fillMode: Image.PreserveAspectFit
                     }
 
                     Label {
@@ -391,6 +384,20 @@ Page {
                         color: Theme.surfaceVariantForeground
                     }
                 }
+            }
+        }
+
+        // PDF ready state
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: pdfDocument.isLoaded && pdfViewerDocument.status === PdfDocument.Ready
+
+            PdfMultiPageView {
+                id: pdfView
+                anchors.fill: parent
+                document: pdfViewerDocument
+                visible: pdfDocument.hasPdfViewer
             }
 
             ColumnLayout {

@@ -21,8 +21,8 @@ public:
     Q_INVOKABLE void checkPendingFile();
     Q_INVOKABLE void clearPendingFile();
 
-    // Called from JNI
-    void handleFileReceived(const QString &fileUri);
+    // Called from JNI - must be Q_INVOKABLE for QMetaObject::invokeMethod
+    Q_INVOKABLE void handleFileReceived(const QString &fileUri);
 
 signals:
     void pendingFileChanged();
