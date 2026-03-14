@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.Material
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import PDF_ToolKit 1.0
 
 Page {
@@ -107,66 +108,16 @@ Page {
                             GradientStop { position: 1.0; color: "#7C3AED" }
                         }
 
-                        // Custom AI Icon using Canvas
-                        Canvas {
+                        // AI Brain Icon
+                        Image {
                             anchors.centerIn: parent
-                            width: 48
-                            height: 48
+                            source: "qrc:/PDF_ToolKit/resources/icons/ai_brain.svg"
+                            sourceSize.width: 48
+                            sourceSize.height: 48
 
-                            onPaint: {
-                                var ctx = getContext("2d");
-                                ctx.reset();
-
-                                var c = "#FFFFFF";
-                                ctx.strokeStyle = c;
-                                ctx.fillStyle = c;
-                                ctx.lineWidth = 2.5;
-                                ctx.lineCap = "round";
-                                ctx.lineJoin = "round";
-
-                                var w = width;
-                                var h = height;
-                                var cx = w / 2;
-                                var cy = h / 2;
-
-                                // Center brain circle
-                                ctx.beginPath();
-                                ctx.arc(cx, cy, 8, 0, Math.PI * 2);
-                                ctx.fill();
-
-                                // Neural connection nodes
-                                var nodes = [
-                                    {x: cx, y: 4},
-                                    {x: w - 4, y: cy},
-                                    {x: cx, y: h - 4},
-                                    {x: 4, y: cy},
-                                    {x: w - 8, y: 8},
-                                    {x: w - 8, y: h - 8},
-                                    {x: 8, y: h - 8},
-                                    {x: 8, y: 8}
-                                ];
-
-                                // Draw connection lines
-                                ctx.beginPath();
-                                for (var i = 0; i < nodes.length; i++) {
-                                    ctx.moveTo(cx, cy);
-                                    ctx.lineTo(nodes[i].x, nodes[i].y);
-                                }
-                                ctx.stroke();
-
-                                // Draw outer nodes
-                                for (var j = 0; j < nodes.length; j++) {
-                                    ctx.beginPath();
-                                    ctx.arc(nodes[j].x, nodes[j].y, 3.5, 0, Math.PI * 2);
-                                    ctx.fill();
-                                }
-
-                                // Pulse ring
-                                ctx.lineWidth = 1.5;
-                                ctx.globalAlpha = 0.4;
-                                ctx.beginPath();
-                                ctx.arc(cx, cy, 16, 0, Math.PI * 2);
-                                ctx.stroke();
+                            layer.enabled: true
+                            layer.effect: ColorOverlay {
+                                color: "#FFFFFF"
                             }
                         }
                     }

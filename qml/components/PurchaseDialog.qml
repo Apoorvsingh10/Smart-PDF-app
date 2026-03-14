@@ -90,7 +90,7 @@ Dialog {
 
                 Image {
                     anchors.centerIn: parent
-                    source: "qrc:/PDF_ToolKit/resources/icons/ai.svg"
+                    source: "qrc:/PDF_ToolKit/resources/icons/ai_brain.svg"
                     sourceSize.width: Theme.iconSizeXLarge
                     sourceSize.height: Theme.iconSizeXLarge
                 }

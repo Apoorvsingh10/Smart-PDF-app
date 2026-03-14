@@ -100,7 +100,7 @@ Page {
                     if (SubscriptionManager.plan === "monthly") return qsTr("Monthly Plan")
                     return qsTr("Free Trial")
                 }
-                iconSource: "qrc:/PDF_ToolKit/resources/icons/ai.svg"
+                iconSource: "qrc:/PDF_ToolKit/resources/icons/ai_brain.svg"
                 accentColor: SubscriptionManager.isPremium ? Theme.success : Theme.secondary
 
                 trailing: [
