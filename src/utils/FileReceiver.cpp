@@ -41,6 +41,19 @@ QString FileReceiver::pendingFile() const
 void FileReceiver::checkPendingFile()
 {
 #ifdef Q_OS_ANDROID
+    // Notify Java that Qt is ready to receive files
+    QJniObject activity = QJniObject::callStaticObjectMethod(
+        "io/smartpdf/app/SmartPdfActivity",
+        "getInstance",
+        "()Lio/smartpdf/app/SmartPdfActivity;"
+    );
+
+    if (activity.isValid()) {
+        activity.callMethod<void>("setQtReady");
+        qDebug() << "FileReceiver: Notified Java that Qt is ready";
+    }
+
+    // Check for any pending file that was waiting
     QJniObject result = QJniObject::callStaticMethod<jstring>(
         "io/smartpdf/app/SmartPdfActivity",
         "getPendingFileUri",

@@ -15,6 +15,7 @@ Page {
     property bool isSaved: false
     property string savedFilePath: ""
     property bool pendingShare: false
+    property bool pendingAINavigation: false
 
     onSourceChanged: {
         // Reset saved state when loading a new file
@@ -28,6 +29,32 @@ Page {
     signal saved(string fileUrl)
     signal showToast(string message, string type)
     signal openAI(url pdfPath, string fileName, string pdfText)
+
+    // Handle PDF text extraction for AI
+    Connections {
+        target: PDFTextExtractor
+        function onExtractionComplete() {
+            if (root.pendingAINavigation) {
+                root.pendingAINavigation = false
+
+                // Set AIManager state
+                AIManager.isImageBased = PDFTextExtractor.isImageBased
+                AIManager.currentPdfText = PDFTextExtractor.extractedText
+                if (PDFTextExtractor.isImageBased) {
+                    AIManager.currentPageImages = PDFTextExtractor.pageImages
+                }
+
+                // Navigate to AI screen
+                root.openAI(root.source, pdfDocument.fileName, PDFTextExtractor.extractedText)
+            }
+        }
+        function onErrorOccurred(error) {
+            if (root.pendingAINavigation) {
+                root.pendingAINavigation = false
+                root.showToast(error, "error")
+            }
+        }
+    }
 
     background: Rectangle {
         color: Theme.background
@@ -136,17 +163,14 @@ Page {
             }
 
             ToolButton {
-                icon.source: "qrc:/PDF_ToolKit/resources/icons/ai.svg"
+                icon.source: "qrc:/PDF_ToolKit/resources/icons/ai_brain.svg"
                 icon.width: Theme.iconSizeMedium
                 icon.height: Theme.iconSizeMedium
                 visible: pdfDocument.isLoaded
                 onClicked: {
-                    var pdfText = PDFTextExtractor.extractText(pdfDocument.filePath)
-                    if (pdfText.length > 0) {
-                        root.openAI(root.source, pdfDocument.fileName, pdfText)
-                    } else {
-                        root.showToast(qsTr("Could not extract text from PDF. The PDF may be image-based."), "error")
-                    }
+                    // Use async extraction which handles both text and image-based PDFs
+                    root.pendingAINavigation = true
+                    PDFTextExtractor.extractFromUrl(pdfDocument.source)
                 }
 
                 ToolTip.visible: hovered
@@ -337,9 +361,36 @@ Page {
             visible: pdfDocument.isLoaded
 
             PdfMultiPageView {
+                id: pdfView
                 anchors.fill: parent
                 document: pdfViewerDocument
-                visible: pdfDocument.isLoaded && pdfDocument.hasPdfViewer
+                visible: pdfDocument.isLoaded && pdfDocument.hasPdfViewer && pdfViewerDocument.status === PdfDocument.Ready
+                // Use default renderScale of 1.0 - users can pinch to zoom
+            }
+
+            // Loading indicator
+            Rectangle {
+                anchors.fill: parent
+                color: Theme.background
+                visible: pdfDocument.isLoaded && pdfViewerDocument.status === PdfDocument.Loading
+
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: Theme.spacingMedium
+
+                    BusyIndicator {
+                        Layout.alignment: Qt.AlignHCenter
+                        running: pdfViewerDocument.status === PdfDocument.Loading
+                        Material.accent: Theme.primary
+                    }
+
+                    Label {
+                        Layout.alignment: Qt.AlignHCenter
+                        text: qsTr("Loading PDF...")
+                        font.pixelSize: Theme.fontSizeBody
+                        color: Theme.surfaceVariantForeground
+                    }
+                }
             }
 
             ColumnLayout {

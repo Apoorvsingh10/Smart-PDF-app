@@ -63,17 +63,18 @@ Page {
                     opacity: 0.08
                 }
 
-                // Top Right Row - Pro Badge + Profile
+                // Top Right Row - Pro Badge + Profile (slightly above center)
                 Row {
                     anchors.right: parent.right
-                    anchors.top: parent.top
+                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.verticalCenterOffset: -20
                     anchors.rightMargin: Theme.spacingMedium
-                    anchors.topMargin: Theme.spacingMedium
                     spacing: Theme.spacingSmall
 
                     // PRO Upgrade Button (only for non-premium)
                     Rectangle {
                         id: proUpgradeBtn
+                        anchors.verticalCenter: parent.verticalCenter
                         visible: !SubscriptionManager.isPremium
                         width: proRow.width + 16
                         height: 32
@@ -117,6 +118,7 @@ Page {
 
                     // Premium Badge (for premium users)
                     Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
                         visible: SubscriptionManager.isPremium
                         width: premiumRow.width + 16
                         height: 32
@@ -147,6 +149,7 @@ Page {
                     // Profile Avatar
                     Rectangle {
                         id: profileButton
+                        anchors.verticalCenter: parent.verticalCenter
                         width: 44
                         height: 44
                         radius: 22
@@ -355,10 +358,12 @@ Page {
                     }
 
                     Label {
-                        text: qsTr("Merge, split, and compress PDFs with ease")
+                        text: qsTr("MERGE  SPLIT  COMPRESS")
                         font.pixelSize: Theme.fontSizeBody
+                        font.weight: Font.Medium
+                        font.letterSpacing: 2
                         color: "#FFFFFF"
-                        opacity: 0.9
+                        opacity: 0.85
                     }
 
                     Item { Layout.fillHeight: true }
@@ -1102,147 +1107,235 @@ Page {
         }
     }
 
-    // Premium AI Tool Card - Standout Full Width Design
+    // Premium AI Tool Card - Stunning Full Width Design with Animations
     component AIToolCard: Rectangle {
         id: aiCard
         signal clicked()
 
-        implicitHeight: 100
+        implicitHeight: 110
         radius: 16
         clip: true
 
         property bool isHovered: false
+        property real glowPhase: 0
+        property real shimmerX: -width
 
-        // Premium gradient background
+        // Animated gradient background
         gradient: Gradient {
             orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: "#7C3AED" }
-            GradientStop { position: 0.5; color: "#8B5CF6" }
+            GradientStop { position: 0.0; color: "#6D28D9" }
+            GradientStop { position: 0.3; color: "#7C3AED" }
+            GradientStop { position: 0.6; color: "#8B5CF6" }
             GradientStop { position: 1.0; color: "#A78BFA" }
         }
 
         Behavior on scale {
-            NumberAnimation { duration: 150; easing.type: Easing.OutCubic }
+            NumberAnimation { duration: 200; easing.type: Easing.OutBack }
         }
 
-        // Subtle shadow
+        // Glow animation
+        SequentialAnimation on glowPhase {
+            loops: Animation.Infinite
+            NumberAnimation { from: 0; to: 1; duration: 2000; easing.type: Easing.InOutSine }
+            NumberAnimation { from: 1; to: 0; duration: 2000; easing.type: Easing.InOutSine }
+        }
+
+        // Shimmer animation
+        SequentialAnimation on shimmerX {
+            loops: Animation.Infinite
+            PauseAnimation { duration: 3000 }
+            NumberAnimation { from: -aiCard.width; to: aiCard.width * 2; duration: 1500; easing.type: Easing.InOutQuad }
+        }
+
+        // Glowing shadow effect
         Rectangle {
             anchors.fill: parent
-            anchors.topMargin: 6
-            z: -1
-            radius: parent.radius
-            color: "#7C3AED"
-            opacity: 0.3
+            anchors.margins: -4
+            z: -2
+            radius: parent.radius + 4
+            color: "transparent"
+            border.width: 4 + (aiCard.glowPhase * 4)
+            border.color: Qt.rgba(139/255, 92/255, 246/255, 0.3 + (aiCard.glowPhase * 0.2))
+            opacity: aiCard.isHovered ? 1 : 0.6
+
+            Behavior on opacity {
+                NumberAnimation { duration: 300 }
+            }
         }
 
-        // Decorative circle patterns
+        // Drop shadow
+        Rectangle {
+            anchors.fill: parent
+            anchors.topMargin: 8
+            z: -1
+            radius: parent.radius
+            color: "#6D28D9"
+            opacity: 0.4
+        }
+
+        // Animated background particles/sparkles
         Item {
             anchors.fill: parent
             clip: true
 
+            // Floating orbs
+            Repeater {
+                model: 6
+                Rectangle {
+                    property real startX: Math.random() * parent.width
+                    property real startY: Math.random() * parent.height
+                    property real floatOffset: 0
+
+                    x: startX + Math.sin(floatOffset + index) * 20
+                    y: startY + Math.cos(floatOffset + index * 0.7) * 15
+                    width: 8 + index * 4
+                    height: width
+                    radius: width / 2
+                    color: "#FFFFFF"
+                    opacity: 0.08 + (index * 0.02)
+
+                    SequentialAnimation on floatOffset {
+                        loops: Animation.Infinite
+                        NumberAnimation { from: 0; to: Math.PI * 2; duration: 4000 + index * 500 }
+                    }
+                }
+            }
+
+            // Sparkle stars
+            Repeater {
+                model: 8
+                Item {
+                    property real sparkleOpacity: 0
+                    x: 30 + (index * parent.width / 8)
+                    y: 20 + (index % 3) * 35
+                    width: 12
+                    height: 12
+                    opacity: sparkleOpacity
+
+                    SequentialAnimation on sparkleOpacity {
+                        loops: Animation.Infinite
+                        PauseAnimation { duration: index * 400 }
+                        NumberAnimation { from: 0; to: 0.8; duration: 300 }
+                        NumberAnimation { from: 0.8; to: 0; duration: 500 }
+                        PauseAnimation { duration: 2000 }
+                    }
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "✦"
+                        font.pixelSize: 10 + (index % 3) * 4
+                        color: "#FFFFFF"
+                    }
+                }
+            }
+
+            // Large decorative circles
             Rectangle {
-                x: parent.width - 60
-                y: -30
-                width: 120
-                height: 120
-                radius: 60
+                x: parent.width - 80
+                y: -40
+                width: 160
+                height: 160
+                radius: 80
                 color: "#FFFFFF"
-                opacity: 0.1
+                opacity: 0.08
             }
 
             Rectangle {
-                x: parent.width - 100
-                y: 40
+                x: parent.width - 140
+                y: 60
+                width: 100
+                height: 100
+                radius: 50
+                color: "#FFFFFF"
+                opacity: 0.06
+            }
+
+            Rectangle {
+                x: -30
+                y: parent.height - 50
                 width: 80
                 height: 80
                 radius: 40
                 color: "#FFFFFF"
-                opacity: 0.08
+                opacity: 0.05
+            }
+        }
+
+        // Shimmer effect overlay
+        Rectangle {
+            x: aiCard.shimmerX
+            y: 0
+            width: 80
+            height: parent.height
+            rotation: -20
+            gradient: Gradient {
+                orientation: Gradient.Horizontal
+                GradientStop { position: 0.0; color: "transparent" }
+                GradientStop { position: 0.5; color: Qt.rgba(1, 1, 1, 0.15) }
+                GradientStop { position: 1.0; color: "transparent" }
             }
         }
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: Theme.spacingMedium
-            spacing: Theme.spacingMedium
+            anchors.leftMargin: Theme.spacingMedium
+            anchors.rightMargin: Theme.spacingMedium
+            anchors.topMargin: Theme.spacingSmall
+            anchors.bottomMargin: Theme.spacingSmall
+            spacing: Theme.spacingSmall
 
-            // Custom AI Icon - Unique Brain-Circuit Design
-            Rectangle {
-                Layout.preferredWidth: 56
-                Layout.preferredHeight: 56
-                radius: 16
-                color: "#FFFFFF"
-                opacity: 0.2
+            // Animated AI Icon with pulsing rings
+            Item {
+                Layout.preferredWidth: 60
+                Layout.preferredHeight: 60
+                Layout.minimumWidth: 60
+                Layout.minimumHeight: 60
+                Layout.alignment: Qt.AlignVCenter
 
+                // Outer pulsing ring
+                Rectangle {
+                    id: pulseRing1
+                    anchors.centerIn: parent
+                    width: 60
+                    height: 60
+                    radius: 30
+                    color: "transparent"
+                    border.width: 2
+                    border.color: "#FFFFFF"
+                    opacity: 0.2 + (aiCard.glowPhase * 0.3)
+                    scale: 1 + (aiCard.glowPhase * 0.1)
+                }
+
+                // Inner pulsing ring
                 Rectangle {
                     anchors.centerIn: parent
-                    width: 48
-                    height: 48
-                    radius: 12
+                    width: 50
+                    height: 50
+                    radius: 25
+                    color: "transparent"
+                    border.width: 1.5
+                    border.color: "#FFFFFF"
+                    opacity: 0.3 + ((1 - aiCard.glowPhase) * 0.2)
+                }
+
+                // Main icon container (white background)
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 46
+                    height: 46
+                    radius: 14
                     color: "#FFFFFF"
 
-                    // Custom AI Icon using Canvas
-                    Canvas {
-                        id: aiIconCanvas
+                    // AI Brain icon
+                    Image {
                         anchors.centerIn: parent
-                        width: 28
-                        height: 28
+                        source: "qrc:/PDF_ToolKit/resources/icons/ai_brain.svg"
+                        sourceSize.width: 26
+                        sourceSize.height: 26
+                        scale: 1 + (aiCard.glowPhase * 0.1)
 
-                        onPaint: {
-                            var ctx = getContext("2d");
-                            ctx.reset();
-
-                            var c = "#7C3AED"; // Purple color
-                            ctx.strokeStyle = c;
-                            ctx.fillStyle = c;
-                            ctx.lineWidth = 1.8;
-                            ctx.lineCap = "round";
-                            ctx.lineJoin = "round";
-
-                            var w = width;
-                            var h = height;
-                            var cx = w / 2;
-                            var cy = h / 2;
-
-                            // Center brain circle
-                            ctx.beginPath();
-                            ctx.arc(cx, cy, 6, 0, Math.PI * 2);
-                            ctx.fill();
-
-                            // Neural connection nodes (outer circles)
-                            var nodes = [
-                                {x: cx, y: 3},           // top
-                                {x: w - 3, y: cy},       // right
-                                {x: cx, y: h - 3},       // bottom
-                                {x: 3, y: cy},           // left
-                                {x: w - 6, y: 6},        // top-right
-                                {x: w - 6, y: h - 6},    // bottom-right
-                                {x: 6, y: h - 6},        // bottom-left
-                                {x: 6, y: 6}             // top-left
-                            ];
-
-                            // Draw connection lines
-                            ctx.beginPath();
-                            for (var i = 0; i < nodes.length; i++) {
-                                ctx.moveTo(cx, cy);
-                                ctx.lineTo(nodes[i].x, nodes[i].y);
-                            }
-                            ctx.stroke();
-
-                            // Draw outer nodes
-                            for (var j = 0; j < nodes.length; j++) {
-                                ctx.beginPath();
-                                ctx.arc(nodes[j].x, nodes[j].y, 2.5, 0, Math.PI * 2);
-                                ctx.fill();
-                            }
-
-                            // Pulse rings around center
-                            ctx.strokeStyle = c;
-                            ctx.lineWidth = 1;
-                            ctx.globalAlpha = 0.3;
-                            ctx.beginPath();
-                            ctx.arc(cx, cy, 10, 0, Math.PI * 2);
-                            ctx.stroke();
+                        Behavior on scale {
+                            NumberAnimation { duration: 200 }
                         }
                     }
                 }
@@ -1251,71 +1344,125 @@ Page {
             // Text content
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 4
+                Layout.alignment: Qt.AlignVCenter
+                spacing: 8
 
                 RowLayout {
                     spacing: Theme.spacingSmall
 
                     Label {
                         text: qsTr("AI Assistant")
-                        font.pixelSize: 18
+                        font.pixelSize: 20
                         font.weight: Font.Bold
                         color: "#FFFFFF"
                     }
 
-                    // NEW badge
+                    // Animated badge
                     Rectangle {
-                        width: newText.width + 12
-                        height: 20
-                        radius: 10
+                        id: newBadge
+                        width: badgeRow.width + 14
+                        height: 22
+                        radius: 11
                         color: "#FBBF24"
 
-                        Text {
-                            id: newText
+                        property real badgePulse: 0
+
+                        SequentialAnimation on badgePulse {
+                            loops: Animation.Infinite
+                            NumberAnimation { from: 0; to: 1; duration: 1000 }
+                            NumberAnimation { from: 1; to: 0; duration: 1000 }
+                        }
+
+                        scale: 1 + (badgePulse * 0.05)
+
+                        Row {
+                            id: badgeRow
                             anchors.centerIn: parent
-                            text: "NEW"
-                            font.pixelSize: 10
-                            font.weight: Font.Bold
-                            color: "#7C3AED"
+                            spacing: 3
+
+                            Image {
+                                source: "qrc:/PDF_ToolKit/resources/icons/sparkle.svg"
+                                sourceSize.width: 10
+                                sourceSize.height: 10
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            Text {
+                                text: "NEW"
+                                font.pixelSize: 10
+                                font.weight: Font.Bold
+                                color: "#7C3AED"
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
                         }
                     }
                 }
 
-                Label {
-                    text: qsTr("Summarize PDFs & ask questions with AI")
-                    font.pixelSize: Theme.fontSizeCaption
-                    color: "#FFFFFF"
-                    opacity: 0.9
+                // Feature pills only
+                Flow {
+                    Layout.fillWidth: true
+                    spacing: 6
+
+                    Repeater {
+                        model: ["Summarize", "Q&A", "Smart"]
+                        Rectangle {
+                            width: pillText.width + 14
+                            height: 24
+                            radius: 12
+                            color: Qt.rgba(1, 1, 1, 0.15)
+                            border.width: 1
+                            border.color: Qt.rgba(1, 1, 1, 0.25)
+
+                            Text {
+                                id: pillText
+                                anchors.centerIn: parent
+                                text: modelData
+                                font.pixelSize: 11
+                                font.weight: Font.Medium
+                                color: "#FFFFFF"
+                            }
+                        }
+                    }
                 }
             }
 
-            // Arrow
+            // Animated arrow button
             Rectangle {
-                Layout.preferredWidth: 36
-                Layout.preferredHeight: 36
-                radius: 18
-                color: aiCard.isHovered ? "#FFFFFF" : "transparent"
+                id: arrowBtn
+                Layout.preferredWidth: 40
+                Layout.preferredHeight: 40
+                Layout.minimumWidth: 40
+                Layout.minimumHeight: 40
+                Layout.alignment: Qt.AlignVCenter
+                radius: 20
+                color: aiCard.isHovered ? "#FFFFFF" : Qt.rgba(1, 1, 1, 0.2)
                 border.width: 2
                 border.color: "#FFFFFF"
-                opacity: aiCard.isHovered ? 1 : 0.7
+
+                property real arrowX: 0
 
                 Behavior on color {
-                    ColorAnimation { duration: 150 }
+                    ColorAnimation { duration: 200 }
                 }
 
-                Behavior on opacity {
-                    NumberAnimation { duration: 150 }
+                // Arrow bounce animation on hover
+                SequentialAnimation {
+                    running: aiCard.isHovered
+                    loops: Animation.Infinite
+                    NumberAnimation { target: arrowBtn; property: "arrowX"; from: 0; to: 3; duration: 400; easing.type: Easing.OutQuad }
+                    NumberAnimation { target: arrowBtn; property: "arrowX"; from: 3; to: 0; duration: 400; easing.type: Easing.InQuad }
                 }
 
                 Text {
                     anchors.centerIn: parent
+                    anchors.horizontalCenterOffset: arrowBtn.arrowX
                     text: "→"
                     font.pixelSize: 18
                     font.weight: Font.Bold
                     color: aiCard.isHovered ? "#7C3AED" : "#FFFFFF"
 
                     Behavior on color {
-                        ColorAnimation { duration: 150 }
+                        ColorAnimation { duration: 200 }
                     }
                 }
             }
@@ -1328,7 +1475,7 @@ Page {
 
             onEntered: {
                 aiCard.isHovered = true
-                aiCard.scale = 1.02
+                aiCard.scale = 1.03
             }
 
             onExited: {
@@ -1337,8 +1484,8 @@ Page {
             }
 
             onClicked: aiCard.clicked()
-            onPressed: aiCard.scale = 0.98
-            onReleased: aiCard.scale = aiCard.isHovered ? 1.02 : 1.0
+            onPressed: aiCard.scale = 0.97
+            onReleased: aiCard.scale = aiCard.isHovered ? 1.03 : 1.0
         }
     }
 }
