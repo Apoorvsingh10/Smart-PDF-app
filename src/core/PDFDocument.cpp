@@ -3,6 +3,11 @@
 #include <QFile>
 #include <QDesktopServices>
 
+#ifdef Q_OS_ANDROID
+#include <QJniObject>
+#include <QCoreApplication>
+#endif
+
 PDFDocument::PDFDocument(QObject *parent) : QObject(parent)
 {
 #ifdef HAS_QT_PDF
@@ -23,8 +28,11 @@ void PDFDocument::setSource(const QUrl &source)
     emit sourceChanged();
 
     QString path = source.toLocalFile();
-    qDebug() << "PDFDocument::setSource - URL:" << source << "LocalFile:" << path;
-    if (path.isEmpty() && source.scheme() == "content") {
+    bool isContentUri = (source.scheme() == "content");
+
+    qDebug() << "PDFDocument::setSource - URL:" << source << "LocalFile:" << path << "isContentUri:" << isContentUri;
+
+    if (path.isEmpty() && isContentUri) {
         path = source.toString();
         qDebug() << "PDFDocument::setSource - Using content URL as path:" << path;
     }
@@ -32,21 +40,70 @@ void PDFDocument::setSource(const QUrl &source)
     m_filePath = path;
     emit filePathChanged();
 
-    QFileInfo info(path);
-    m_fileName = info.fileName();
+    // Extract filename from content URI or file path
+    if (isContentUri) {
+        // For content URIs, try to extract filename from the path
+        QString uriPath = source.path();
+        int lastSlash = uriPath.lastIndexOf('/');
+        if (lastSlash >= 0) {
+            m_fileName = QUrl::fromPercentEncoding(uriPath.mid(lastSlash + 1).toUtf8());
+        } else {
+            m_fileName = "document.pdf";
+        }
+    } else {
+        QFileInfo info(path);
+        m_fileName = info.fileName();
+    }
     emit fileNameChanged();
 
-    qDebug() << "PDFDocument::setSource - Checking if file exists:" << path << "Exists:" << QFile::exists(path);
-    if (QFile::exists(path)) {
-        m_fileSize = info.size();
-        emit fileSizeChanged();
-#ifdef HAS_QT_PDF
-        m_document->load(path);
+    // For content:// URIs on Android, we can't use QFile::exists()
+    // Instead, try to load directly - Qt handles content:// URIs internally
+    bool canLoad = false;
+
+    if (isContentUri) {
+#ifdef Q_OS_ANDROID
+        qDebug() << "PDFDocument::setSource - Android content URI, attempting direct load";
+        canLoad = true;  // Try to load directly, let Qt handle it
 #else
-        // On Android, we don't have built-in PDF viewing
-        // Set as loaded so the UI can offer to open externally
+        qDebug() << "PDFDocument::setSource - Content URI not supported on this platform";
+        emit loadError(tr("Content URIs not supported on this platform"));
+        return;
+#endif
+    } else {
+        // Regular file path
+        canLoad = QFile::exists(path);
+        qDebug() << "PDFDocument::setSource - Checking if file exists:" << path << "Exists:" << canLoad;
+        if (canLoad) {
+            QFileInfo info(path);
+            m_fileSize = info.size();
+            emit fileSizeChanged();
+        }
+    }
+
+    if (canLoad) {
+#ifdef HAS_QT_PDF
+        if (isContentUri) {
+            // For content:// URIs, try loading via QFile which Qt handles internally
+            qDebug() << "PDFDocument::setSource - Loading content URI via QFile";
+            QFile *file = new QFile(source.toString(), this);
+            if (file->open(QIODevice::ReadOnly)) {
+                qDebug() << "PDFDocument::setSource - Content file opened successfully";
+                m_fileSize = file->size();
+                emit fileSizeChanged();
+                m_document->load(file);
+            } else {
+                qDebug() << "PDFDocument::setSource - Failed to open content file:" << file->errorString();
+                delete file;
+                emit loadError(tr("Cannot open file: %1").arg(file->errorString()));
+                return;
+            }
+        } else {
+            m_document->load(path);
+        }
+#else
+        // On Android without Qt PDF, set as loaded so UI can offer external viewing
         m_isLoaded = true;
-        m_pageCount = 1; // Unknown, set to 1
+        m_pageCount = 1;
         emit isLoadedChanged();
         emit pageCountChanged();
         qDebug() << "PDFDocument::setSource - File loaded successfully (external mode)";

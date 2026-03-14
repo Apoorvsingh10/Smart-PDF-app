@@ -112,6 +112,7 @@ qt_add_qml_module(appPDF_ToolKit
         resources/icons/ai_brain.svg
         resources/icons/summary.svg
         resources/icons/sparkle.svg
+        resources/images/pixel_cat.gif
     RESOURCE_PREFIX "/"
 )
 
