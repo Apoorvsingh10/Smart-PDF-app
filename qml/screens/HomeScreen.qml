@@ -71,18 +71,34 @@ Page {
                     anchors.rightMargin: Theme.spacingMedium
                     spacing: Theme.spacingSmall
 
-                    // PRO Upgrade Button (only for non-premium)
+                    // PRO Upgrade Button (only for non-premium) - Highly Clickable Design
                     Rectangle {
                         id: proUpgradeBtn
                         anchors.verticalCenter: parent.verticalCenter
                         visible: !SubscriptionManager.isPremium
-                        width: proRow.width + 16
-                        height: 32
-                        radius: 16
-                        color: proMouseArea.containsMouse ? "#FFFFFF" : "#FFFFFFEE"
+                        width: proRow.width + 24
+                        height: 36
+                        radius: 18
 
-                        Behavior on color {
-                            ColorAnimation { duration: 150 }
+                        gradient: Gradient {
+                            orientation: Gradient.Horizontal
+                            GradientStop { position: 0.0; color: proMouseArea.pressed ? "#F59E0B" : "#FBBF24" }
+                            GradientStop { position: 1.0; color: proMouseArea.pressed ? "#D97706" : "#F59E0B" }
+                        }
+
+                        // Shadow
+                        Rectangle {
+                            anchors.fill: parent
+                            anchors.topMargin: 3
+                            z: -1
+                            radius: parent.radius
+                            color: "#00000040"
+                        }
+
+                        scale: proMouseArea.pressed ? 0.95 : (proMouseArea.containsMouse ? 1.05 : 1.0)
+
+                        Behavior on scale {
+                            NumberAnimation { duration: 100; easing.type: Easing.OutCubic }
                         }
 
                         Row {
@@ -90,20 +106,18 @@ Page {
                             anchors.centerIn: parent
                             spacing: 6
 
-                            // Crown/Star icon
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "⭐"
-                                font.pixelSize: 12
+                                text: "\u2728"
+                                font.pixelSize: 14
                             }
 
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "PRO"
-                                font.pixelSize: 12
+                                text: "Upgrade"
+                                font.pixelSize: 13
                                 font.weight: Font.Bold
-                                font.letterSpacing: 0.5
-                                color: "#7C3AED"
+                                color: "#FFFFFF"
                             }
                         }
 

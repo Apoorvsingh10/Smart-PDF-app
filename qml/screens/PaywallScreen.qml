@@ -201,7 +201,7 @@ Page {
                     spacing: Theme.spacingTiny
 
                     Label {
-                        text: "🔒"
+                        text: "\uD83D\uDD12"
                         font.pixelSize: Theme.fontSizeBody
                     }
 
@@ -330,7 +330,7 @@ Page {
                         spacing: Theme.spacingTiny
 
                         Label {
-                            text: "✓"
+                            text: "\u2713"
                             font.pixelSize: Theme.fontSizeCaption
                             color: Theme.success
                         }

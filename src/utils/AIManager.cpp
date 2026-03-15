@@ -464,6 +464,10 @@ void AIManager::handleResponse(QNetworkReply *reply)
 void AIManager::cancelRequest()
 {
     if (m_currentReply) {
+        // Disconnect all signals first to prevent handleResponse from being called
+        // after we set m_currentReply to nullptr
+        disconnect(m_currentReply, nullptr, this, nullptr);
+
         m_currentReply->abort();
         m_currentReply->deleteLater();
         m_currentReply = nullptr;
