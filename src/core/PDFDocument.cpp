@@ -81,33 +81,13 @@ void PDFDocument::setSource(const QUrl &source)
     }
 
     if (canLoad) {
-#ifdef HAS_QT_PDF
-        if (isContentUri) {
-            // For content:// URIs, try loading via QFile which Qt handles internally
-            qDebug() << "PDFDocument::setSource - Loading content URI via QFile";
-            QFile *file = new QFile(source.toString(), this);
-            if (file->open(QIODevice::ReadOnly)) {
-                qDebug() << "PDFDocument::setSource - Content file opened successfully";
-                m_fileSize = file->size();
-                emit fileSizeChanged();
-                m_document->load(file);
-            } else {
-                qDebug() << "PDFDocument::setSource - Failed to open content file:" << file->errorString();
-                delete file;
-                emit loadError(tr("Cannot open file: %1").arg(file->errorString()));
-                return;
-            }
-        } else {
-            m_document->load(path);
-        }
-#else
-        // On Android without Qt PDF, set as loaded so UI can offer external viewing
+        // Don't load PDF here - let PdfDocument in QML handle the actual loading
+        // This avoids loading the PDF twice which causes slowness
         m_isLoaded = true;
-        m_pageCount = 1;
+        m_pageCount = 1;  // Actual count comes from pdfViewerDocument in QML
         emit isLoadedChanged();
         emit pageCountChanged();
-        qDebug() << "PDFDocument::setSource - File loaded successfully (external mode)";
-#endif
+        qDebug() << "PDFDocument::setSource - File ready for viewing";
     } else {
         qDebug() << "PDFDocument::setSource - FILE NOT FOUND!";
         emit loadError(tr("File not found: %1").arg(path));

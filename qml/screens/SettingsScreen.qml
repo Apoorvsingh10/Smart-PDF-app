@@ -90,18 +90,20 @@ Page {
                 title: qsTr("Subscription")
             }
 
-            // Plan info
+            // Plan info - clickable for free users to upgrade
             SettingsItem {
+                id: planItem
                 Layout.fillWidth: true
                 title: qsTr("Current Plan")
                 subtitle: {
                     if (SubscriptionManager.plan === "lifetime") return qsTr("Lifetime Member")
                     if (SubscriptionManager.plan === "quarterly") return qsTr("Quarterly Plan")
                     if (SubscriptionManager.plan === "monthly") return qsTr("Monthly Plan")
-                    return qsTr("Free Trial")
+                    return qsTr("Free Trial - Tap to upgrade")
                 }
                 iconSource: "qrc:/PDF_ToolKit/resources/icons/ai_brain.svg"
                 accentColor: SubscriptionManager.isPremium ? Theme.success : Theme.secondary
+                isClickable: !SubscriptionManager.isPremium
 
                 trailing: [
                     Rectangle {
@@ -122,6 +124,12 @@ Page {
                         }
                     }
                 ]
+
+                MouseArea {
+                    anchors.fill: parent
+                    enabled: !SubscriptionManager.isPremium
+                    onClicked: root.navigateToPaywall()
+                }
             }
 
             // AI Usage info
@@ -233,13 +241,17 @@ Page {
             // Footer
             Item { Layout.preferredHeight: Theme.spacingXLarge }
 
-            // Credits card
+            // Credits card with gradient
             Rectangle {
                 Layout.fillWidth: true
                 Layout.margins: Theme.spacingMedium
                 Layout.preferredHeight: creditsContent.height + Theme.spacingLarge
                 radius: Theme.radiusMedium
-                color: Theme.primaryContainer
+
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15) }
+                    GradientStop { position: 1.0; color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.05) }
+                }
 
                 ColumnLayout {
                     id: creditsContent
@@ -269,15 +281,33 @@ Page {
                         text: qsTr("Thank you for using Smart PDF!")
                         font.pixelSize: Theme.fontSizeSubtitle
                         font.weight: Font.DemiBold
-                        color: Theme.primaryContainerForeground
+                        color: Theme.surfaceForeground
                     }
 
                     Label {
                         Layout.alignment: Qt.AlignHCenter
                         text: qsTr("Your all-in-one PDF solution")
                         font.pixelSize: Theme.fontSizeCaption
-                        color: Theme.primaryContainerForeground
-                        opacity: 0.8
+                        color: Theme.surfaceVariantForeground
+                    }
+
+                    // Powered by Qt badge
+                    Rectangle {
+                        Layout.alignment: Qt.AlignHCenter
+                        Layout.preferredWidth: qtLabel.width + Theme.spacingMedium
+                        Layout.preferredHeight: 24
+                        Layout.topMargin: Theme.spacingTiny
+                        radius: Theme.radiusFull
+                        color: Qt.rgba(0.25, 0.7, 0.35, 0.15)
+
+                        Label {
+                            id: qtLabel
+                            anchors.centerIn: parent
+                            text: qsTr("Powered by Qt 6")
+                            font.pixelSize: Theme.fontSizeTiny
+                            font.weight: Font.Medium
+                            color: Qt.rgba(0.25, 0.7, 0.35, 1.0)
+                        }
                     }
                 }
             }
@@ -312,9 +342,10 @@ Page {
         property string iconSource
         property color accentColor: Theme.primary
         property alias trailing: trailingContainer.children
+        property bool isClickable: false  // Whether this item should look clickable
 
         implicitHeight: 72
-        color: mouseArea.containsMouse ? Theme.cardSurfaceHover : "transparent"
+        color: isClickable && mouseArea.containsMouse ? Theme.cardSurfaceHover : "transparent"
         radius: Theme.radiusSmall
 
         Behavior on color {
@@ -373,8 +404,9 @@ Page {
         MouseArea {
             id: mouseArea
             anchors.fill: parent
-            hoverEnabled: true
+            hoverEnabled: settingsItem.isClickable
             acceptedButtons: Qt.NoButton
+            cursorShape: settingsItem.isClickable ? Qt.PointingHandCursor : Qt.ArrowCursor
         }
     }
 

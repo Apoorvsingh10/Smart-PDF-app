@@ -162,19 +162,91 @@ Page {
                 ToolTip.text: root.isPreview && !root.isSaved ? qsTr("Save & Share") : qsTr("Share PDF")
             }
 
-            ToolButton {
-                icon.source: "qrc:/PDF_ToolKit/resources/icons/ai_brain.svg"
-                icon.width: Theme.iconSizeMedium
-                icon.height: Theme.iconSizeMedium
+            // Glowing AI Button
+            Item {
+                width: 48
+                height: 48
                 visible: pdfDocument.isLoaded
-                onClicked: {
-                    // Use async extraction which handles both text and image-based PDFs
-                    root.pendingAINavigation = true
-                    PDFTextExtractor.extractFromUrl(pdfDocument.source)
+
+                // Outer glow effect
+                Rectangle {
+                    id: aiGlow
+                    anchors.centerIn: parent
+                    width: 40
+                    height: 40
+                    radius: 20
+                    color: "transparent"
+                    border.width: 2
+                    border.color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, glowAnim.glowOpacity)
+
+                    property real glowScale: 1.0
+
+                    // Pulsing glow animation
+                    SequentialAnimation {
+                        id: glowAnim
+                        running: true
+                        loops: Animation.Infinite
+                        property real glowOpacity: 0.3
+
+                        ParallelAnimation {
+                            NumberAnimation {
+                                target: glowAnim
+                                property: "glowOpacity"
+                                from: 0.3; to: 0.8
+                                duration: 1000
+                                easing.type: Easing.InOutSine
+                            }
+                            NumberAnimation {
+                                target: aiGlow
+                                property: "scale"
+                                from: 1.0; to: 1.15
+                                duration: 1000
+                                easing.type: Easing.InOutSine
+                            }
+                        }
+                        ParallelAnimation {
+                            NumberAnimation {
+                                target: glowAnim
+                                property: "glowOpacity"
+                                from: 0.8; to: 0.3
+                                duration: 1000
+                                easing.type: Easing.InOutSine
+                            }
+                            NumberAnimation {
+                                target: aiGlow
+                                property: "scale"
+                                from: 1.15; to: 1.0
+                                duration: 1000
+                                easing.type: Easing.InOutSine
+                            }
+                        }
+                    }
                 }
 
-                ToolTip.visible: hovered
-                ToolTip.text: qsTr("AI Assistant")
+                // Inner glow
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 36
+                    height: 36
+                    radius: 18
+                    color: Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.15)
+                }
+
+                ToolButton {
+                    anchors.centerIn: parent
+                    icon.source: "qrc:/PDF_ToolKit/resources/icons/ai_brain.svg"
+                    icon.width: Theme.iconSizeMedium
+                    icon.height: Theme.iconSizeMedium
+                    icon.color: Theme.primary
+                    onClicked: {
+                        // Use async extraction which handles both text and image-based PDFs
+                        root.pendingAINavigation = true
+                        PDFTextExtractor.extractFromUrl(pdfDocument.source)
+                    }
+
+                    ToolTip.visible: hovered
+                    ToolTip.text: qsTr("AI Assistant")
+                }
             }
 
             ToolButton {
@@ -350,39 +422,6 @@ Page {
                     Material.foreground: Theme.warningForeground
                     font.weight: Font.DemiBold
                     onClicked: fileDialog.open()
-                }
-            }
-        }
-
-        // Loading state - show when source is set but PDF not ready
-        Item {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            visible: pdfDocument.source.toString() !== "" && pdfViewerDocument.status !== PdfDocument.Ready
-
-            Rectangle {
-                anchors.fill: parent
-                color: Theme.background
-
-                ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: Theme.spacingMedium
-
-                    AnimatedImage {
-                        Layout.alignment: Qt.AlignHCenter
-                        source: "qrc:/PDF_ToolKit/resources/images/pixel_cat.gif"
-                        playing: true
-                        Layout.preferredWidth: 150
-                        Layout.preferredHeight: 52
-                        fillMode: Image.PreserveAspectFit
-                    }
-
-                    Label {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: qsTr("Loading PDF...")
-                        font.pixelSize: Theme.fontSizeBody
-                        color: Theme.surfaceVariantForeground
-                    }
                 }
             }
         }
