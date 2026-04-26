@@ -8,6 +8,13 @@
 *.env
 .env.*
 api_key.cmake
+google-services.json
+**/google-services.json
+
+# Log files
+*log_capture*.txt
+*.log
+log.txt
 
 # Build directories
 build/
@@ -32,3 +39,17 @@ CMakeLists.txt.user
 # OS specific
 .DS_Store
 Thumbs.db
+nul
+
+# Build artifacts
+*.apk
+*.aab
+
+# Keystore (sensitive)
+keystore/
+*.keystore
+*.jks
+
+# Temp folders
+New folder/
+ICON/

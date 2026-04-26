@@ -30,7 +30,7 @@ We use the collected information to:
 
 - **Provide and maintain the App:** Enable core PDF viewing, editing, and AI features.
 - **Improve user experience:** Analyze usage patterns to enhance features and performance.
-- **Process payments:** Handle subscription and in-app purchases through Razorpay.
+- **Process payments:** Handle subscription and in-app purchases through Google Play Billing.
 - **Provide customer support:** Respond to your inquiries and resolve issues.
 - **Ensure security:** Protect against unauthorized access and fraudulent activity.
 - **Comply with legal obligations:** Adhere to applicable laws and regulations.
@@ -50,10 +50,28 @@ Our App uses the following third-party services:
 
 - **Google Sign-In (Firebase Authentication):** For user authentication. [Google Privacy Policy](https://policies.google.com/privacy)
 - **Firebase Analytics:** For app usage analysis. [Firebase Privacy Policy](https://firebase.google.com/support/privacy)
-- **Firebase Crashlytics:** For crash reporting and diagnostics. [Firebase Privacy Policy](https://firebase.google.com/support/privacy)
-- **Razorpay:** For payment processing. [Razorpay Privacy Policy](https://razorpay.com/privacy/)
+- **Google Play Billing:** For subscription and in-app purchase processing. [Google Privacy Policy](https://policies.google.com/privacy)
+- **Google Gemini AI:** For AI-powered document summarization and Q&A features. When you use AI features, document text may be sent to Google's servers for processing. [Google AI Privacy](https://policies.google.com/privacy)
 
-## 5. Data Retention
+## 4.1 AI Features and Document Processing
+
+When you use the AI Assistant feature to summarize documents or ask questions:
+- **Document text** is extracted and sent to Google Gemini AI for processing
+- We do **not** store your document content on our servers
+- AI responses are generated in real-time and not retained by us
+- Your usage of AI features is subject to Google's AI terms and privacy policy
+
+## 5. App Permissions
+
+Our App requests the following permissions:
+
+- **Internet Access:** Required for authentication, AI features, and subscription management
+- **Storage Access:** Required to open, save, and manage PDF files on your device
+- **Network State:** Required to check internet connectivity for online features
+
+We only use these permissions for the stated purposes and do not access any data beyond what is necessary for the App's functionality.
+
+## 6. Data Retention
 
 We retain your personal data only for as long as necessary to fulfill the purposes outlined in this policy:
 
