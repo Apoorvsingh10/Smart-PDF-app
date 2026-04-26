@@ -431,14 +431,31 @@ Page {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: pdfDocument.isLoaded && pdfViewerDocument.status === PdfDocument.Ready
-
             PdfMultiPageView {
                 id: pdfView
                 anchors.fill: parent
                 document: pdfViewerDocument
                 visible: pdfDocument.hasPdfViewer
-            }
 
+                Component.onCompleted: {
+                    var pw = document.pagePointSize(0).width
+                    renderScale = width / (pw > 0 ? pw : 595)
+
+                    for (var i = 0; i < pdfView.children.length; i++) {
+                        var child = pdfView.children[i]
+                        if (child.hasOwnProperty("flickableDirection")) {
+                            child.flickableDirection = Flickable.HorizontalAndVerticalFlick
+                            child.boundsBehavior = Flickable.StopAtBounds
+                            break
+                        }
+                    }
+                }
+
+                onWidthChanged: {
+                    var pw = document.pagePointSize(0).width
+                    renderScale = width / (pw > 0 ? pw : 595)
+                }
+            }
             ColumnLayout {
                 anchors.centerIn: parent
                 spacing: Theme.spacingLarge
