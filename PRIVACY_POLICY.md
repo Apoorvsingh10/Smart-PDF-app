@@ -1,6 +1,6 @@
 # Privacy Policy for Smart PDF
 
-**Last Updated:** April 12, 2026
+**Last Updated:** August 7, 2026
 
 This Privacy Policy describes how Smart PDF, operated by Apoorva Singh ("we," "us," or "our"), collects, uses, and discloses your information when you use our mobile application ("App").
 
@@ -89,16 +89,6 @@ You have the following rights regarding your data:
 - **Opt-out of Analytics:** You can opt out of analytics collection in the App settings.
 
 To exercise any of these rights, contact us at meapoorv1212@gmail.com. We will respond to your request within 30 days.
-
-## 7. Data Security
-
-We implement industry-standard security measures to protect your data, including:
-
-- Encrypted data transmission using HTTPS/TLS
-- Secure authentication through Firebase
-- Regular security assessments
-
-While we strive to protect your personal data, no method of transmission over the Internet is 100% secure. We cannot guarantee absolute security.
 
 ## 8. Children's Privacy
 
